@@ -12,6 +12,10 @@ export class SceneManager {
     this.focusLight = new THREE.SpotLight(0x8eefff, 0, 18, Math.PI / 4, .9, 1.7);
     this.focusLight.castShadow = false; this.focusTarget = new THREE.Object3D(); this.focusLight.target = this.focusTarget;
     this.scene.add(this.focusLight, this.focusTarget);
+    const routeCurve = new THREE.CatmullRomCurve3(hops.map((hop) => new THREE.Vector3().fromArray(hop.center).add(new THREE.Vector3(0, -1.35, 0))), false, 'catmullrom', .35);
+    const routeGeometry = new THREE.BufferGeometry().setFromPoints(routeCurve.getPoints(220));
+    this.routeLine = new THREE.Line(routeGeometry, new THREE.LineBasicMaterial({ color: 0x50e9ff, transparent: true, opacity: .18, depthWrite: false }));
+    this.routeLine.name = 'PersistentJourneyRoute'; this.scene.add(this.routeLine);
     this.ensure(0);
     this.setActive(-1);
   }

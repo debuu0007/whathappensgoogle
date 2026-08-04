@@ -98,6 +98,7 @@ export class UI {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'hotspot';
       button.innerHTML = `<i></i><span>${String(index + 1).padStart(2,'0')} · ${spot[s.mode].title}</span>`;
       button.setAttribute('aria-label', `Explore ${spot[s.mode].title}`); button.hidden = !visible;
+      button.style.setProperty('--stagger', `${index * 70}ms`); button.classList.toggle('is-visible', visible);
       button.classList.toggle('is-active', s.focusedHotspot === spot.id);
       button.addEventListener('click', () => this.state.send('FOCUS', { id: spot.id }));
       this.hotspotLayer.append(button); this.buttons.set(spot.id, { button, spot, index });
@@ -115,23 +116,24 @@ export class UI {
   }
   updateAnchors() {
     const s = this.state.value; const hop = this.hops[s.hopIndex];
-    this.buttons.forEach(({ button, spot, index }) => {
+    const projected = [];
+    this.buttons.forEach(({ button, spot }) => {
       const anchor = this.scenes.anchor(s.hopIndex, spot.anchorMesh); if (!anchor) return;
       const offset = anchor.userData.hotspotOffset;
       if (offset) { this.vector.fromArray(offset); anchor.localToWorld(this.vector); }
       else anchor.getWorldPosition(this.vector);
       this.vector.project(this.camera);
       const rawX = (this.vector.x * .5 + .5) * innerWidth, rawY = (-this.vector.y * .5 + .5) * innerHeight;
-      const x = THREE.MathUtils.clamp(rawX, 24, innerWidth - 210);
-      const spread = (index - (this.buttons.size - 1) / 2) * 30;
-      const spreadRoom = Math.max(0, (this.buttons.size - 1) * 15);
-      const baseY = THREE.MathUtils.clamp(rawY, 90 + spreadRoom, innerHeight - 110 - spreadRoom);
-      const y = baseY + spread;
-      button.style.transform = `translate3d(${x}px,${y}px,0)`; button.hidden = this.vector.z > 1 || s.transitionLock;
+      const onScreen = this.vector.z <= 1 && rawX > 12 && rawX < innerWidth - 12 && rawY > 12 && rawY < innerHeight - 12;
+      button.style.transform = `translate3d(${rawX - 7.5}px,${rawY - 7.5}px,0)`; button.hidden = !onScreen || s.transitionLock;
+      button.style.setProperty('--label-shift', '0px');
+      if (onScreen) projected.push({ button, y: rawY });
       if (spot.id === s.focusedHotspot && s.phase === 'FOCUSED' && !s.transitionLock) {
-        const rect = this.card.getBoundingClientRect(); this.line.setAttribute('x1', x); this.line.setAttribute('y1', y); this.line.setAttribute('x2', rect.left); this.line.setAttribute('y2', rect.top + 68);
+        const rect = this.card.getBoundingClientRect(); this.line.setAttribute('x1', rawX); this.line.setAttribute('y1', rawY); this.line.setAttribute('x2', rect.left); this.line.setAttribute('y2', rect.top + 68);
       }
     });
+    projected.sort((a, b) => a.y - b.y); let previous = -Infinity;
+    projected.forEach((entry) => { const labelY = Math.max(entry.y, previous + 30); const shift = THREE.MathUtils.clamp(labelY - entry.y, -36, 36); entry.button.style.setProperty('--label-shift', `${shift}px`); previous = entry.y + shift; });
     q('#leader-layer').classList.toggle('is-visible', s.phase === 'FOCUSED' && !s.transitionLock);
   }
   playTimer() {

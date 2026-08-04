@@ -6,6 +6,7 @@ export class CameraController {
   constructor(camera, canvas, state, hops, scenes) {
     this.camera = camera; this.state = state; this.hops = hops; this.scenes = scenes;
     this.goalPos = camera.position.clone(); this.goalLook = new THREE.Vector3(0, 0, -4); this.look = this.goalLook.clone();
+    this.travelTarget = new THREE.Vector3();
     this.rail = null; this.railT = { value: 0 }; this.focusBase = null;
     this.controls = new OrbitControls(camera, canvas);
     Object.assign(this.controls, { enabled: false, enablePan: false, minDistance: 2.5, maxDistance: 9, enableDamping: true, dampingFactor: .08 });
@@ -29,6 +30,7 @@ export class CameraController {
   }
   travel(hop, index) {
     this.controls.enabled = false; this.railT.value = 0;
+    this.travelTarget.fromArray(hop.center);
     const start = this.camera.position.clone(); const end = new THREE.Vector3().fromArray(hop.overview.pos);
     const bend = new THREE.Vector3().addVectors(start, end).multiplyScalar(.5).add(new THREE.Vector3(index % 2 ? 5 : -5, 4, 0));
     this.rail = new THREE.CatmullRomCurve3([start, start.clone().lerp(bend, .55), bend, bend.clone().lerp(end, .55), end], false, 'catmullrom', .5);
@@ -98,7 +100,7 @@ export class CameraController {
   update(delta, elapsed) {
     if (this.rail && this.state.value.phase === 'TRAVELING') {
       const t = this.railT.value; const pos = this.rail.getPointAt(t); const ahead = this.rail.getPointAt(Math.min(t + .05, 1));
-      this.goalPos.copy(pos); this.goalLook.copy(ahead);
+      this.goalPos.copy(pos); this.goalLook.copy(ahead).lerp(this.travelTarget, THREE.MathUtils.smoothstep(t, .52, .94));
     }
     if (this.controls.enabled) { this.controls.update(); this.goalPos.copy(this.camera.position); this.goalLook.copy(this.controls.target); return; }
     const focused = this.state.value.phase === 'FOCUSED';
