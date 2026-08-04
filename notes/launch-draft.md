@@ -8,7 +8,7 @@ I built the classic “what happens when you type google.com?” interview quest
 
 Easy mode explains the journey with analogies. Interview mode unlocks the real terminology, extra hotspots, source links, and a one-line answer for every concept.
 
-[live link] · [source link]
+https://packet-journey-google.zukie2345.chatgpt.site · https://github.com/debuu0007/whathappensgoogle
 
 ## Follow-ups
 
