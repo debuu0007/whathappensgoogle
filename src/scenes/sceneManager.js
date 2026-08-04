@@ -42,6 +42,11 @@ export class SceneManager {
     }
   }
   anchor(hopIndex, name) { return this.groups[hopIndex]?.getObjectByName(name); }
+  freezeSway(hopIndex, frozen) {
+    const group = this.ensure(hopIndex); if (!group) return;
+    group.userData.freezeSway = frozen;
+    if (frozen) { group.rotation.y = 0; group.updateWorldMatrix(true, true); }
+  }
   setFocus(hopIndex, anchorName) {
     const active = this.groups[hopIndex]; if (!active) return;
     const anchor = anchorName ? active.getObjectByName(anchorName) : null;
@@ -72,7 +77,7 @@ export class SceneManager {
     this.groups.forEach((group, index) => {
       if (!group) return;
       if (!group.visible) return;
-      group.rotation.y = Math.sin(elapsed * .18 + index) * .025;
+      if (!group.userData.freezeSway) group.rotation.y = Math.sin(elapsed * .18 + index) * .025;
       group.userData.update?.(_delta, elapsed);
       group.traverse((node) => {
         if (!node.isMesh || !node.material) return;

@@ -18,7 +18,7 @@ scene.add(new THREE.HemisphereLight(0x81dcff, 0x090a11, 1.45)); const key = new 
 const stars = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0x40616d, size: .025, transparent: true, opacity: .55 }));
 const starPos = new Float32Array(1800 * 3); for (let i=0;i<starPos.length;i+=3){starPos[i]=(Math.random()-.5)*90;starPos[i+1]=(Math.random()-.5)*35;starPos[i+2]=-Math.random()*120+15;} stars.geometry.setAttribute('position',new THREE.BufferAttribute(starPos,3)); scene.add(stars);
 
-const state = new JourneyState(hops); const scenes = new SceneManager(scene, hops, renderer); const cameraController = new CameraController(camera, canvas, state, hops); const ui = new UI(state, hops, camera, scenes, uiCopy);
+const state = new JourneyState(hops); const scenes = new SceneManager(scene, hops, renderer); const cameraController = new CameraController(camera, canvas, state, hops, scenes); const ui = new UI(state, hops, camera, scenes, uiCopy);
 const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera)); const bloom = new BloomEffect({ intensity: .8, luminanceThreshold: .4, luminanceSmoothing: .3, mipmapBlur: true }); composer.addPass(new EffectPass(camera, bloom));
 let lowEnd = matchMedia('(max-width: 700px), (pointer: coarse)').matches; let probeFrames = 0; const probeStarted = performance.now(); let probed = lowEnd;
 const enableLowEnd = () => { lowEnd = true; probed = true; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight); document.body.classList.add('low-end'); };
