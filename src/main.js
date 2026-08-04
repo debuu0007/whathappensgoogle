@@ -26,7 +26,7 @@ if (lowEnd) enableLowEnd();
 const resize = () => { const width=innerWidth,height=innerHeight; camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);composer.setSize(width,height);}; addEventListener('resize',resize,{passive:true});
 state.addEventListener('change',({detail})=>{
   const s=detail.value; const hop=hops[s.hopIndex]; const spot=hop.hotspots.find((item)=>item.id===s.focusedHotspot);
-  scenes.setFocus(s.hopIndex, spot?.anchorMesh ?? null);
+  scenes.setFocus(s.hopIndex, spot?.anchorMesh ?? null, spot?.story ?? null);
   if(detail.reason==='FINISH'){ scenes.playFinale(); window.setTimeout(()=>state.send('SETTLED'),1800); }
   if (!['LOADING', 'HERO'].includes(s.phase)) {
     const suffix = s.focusedHotspot ? `/${s.focusedHotspot}` : '';

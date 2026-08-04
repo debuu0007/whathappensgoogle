@@ -8,6 +8,7 @@ export class SceneManager {
     this.hops = hops;
     this.renderer = renderer;
     this.groups = new Array(hops.length).fill(null);
+    this.currentStory = null;
     this.focusLight = new THREE.SpotLight(0x8eefff, 0, 18, Math.PI / 4, .9, 1.7);
     this.focusLight.castShadow = false; this.focusTarget = new THREE.Object3D(); this.focusLight.target = this.focusTarget;
     this.scene.add(this.focusLight, this.focusTarget);
@@ -70,8 +71,13 @@ export class SceneManager {
     group.userData.freezeSway = frozen;
     if (frozen) { group.rotation.y = 0; group.updateWorldMatrix(true, true); }
   }
-  setFocus(hopIndex, anchorName) {
+  setFocus(hopIndex, anchorName, storyId = null) {
     const active = this.groups[hopIndex]; if (!active) return;
+    const storyKey = storyId ? `${hopIndex}:${storyId}` : null;
+    if (storyKey !== this.currentStory) {
+      this.groups.forEach((group) => group?.userData.stopStory?.());
+      this.currentStory = storyKey;
+    }
     const anchor = anchorName ? active.getObjectByName(anchorName) : null;
     active.traverse((node) => {
       if (!node.isMesh || !node.material) return;
@@ -94,6 +100,7 @@ export class SceneManager {
       this.focusTarget.position.copy(center); this.focusLight.position.copy(center).add(new THREE.Vector3(2.5, 4, 3));
       this.focusLight.userData.targetIntensity = 3.2;
     } else this.focusLight.userData.targetIntensity = 0;
+    if (storyKey && storyKey === this.currentStory && active.userData.storyActive !== storyId) active.userData.playStory?.(storyId);
   }
   playFinale() {
     this.setActive(5);
