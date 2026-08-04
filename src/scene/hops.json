@@ -1,0 +1,559 @@
+[
+  {
+    "id": "browser",
+    "center": [
+      0,
+      0,
+      -4
+    ],
+    "overview": {
+      "pos": [
+        0,
+        2.8,
+        7
+      ],
+      "lookAt": [
+        0,
+        0,
+        -4
+      ]
+    },
+    "hotspots": [
+      {
+        "id": "parser",
+        "anchorMesh": "BrowserParser",
+        "focus": {
+          "pos": [
+            -4,
+            1.7,
+            1
+          ],
+          "lookAt": [
+            -1,
+            0,
+            -4
+          ]
+        },
+        "story": "browser-parser"
+      },
+      {
+        "id": "cache",
+        "anchorMesh": "BrowserCache",
+        "focus": {
+          "pos": [
+            4,
+            1.5,
+            0
+          ],
+          "lookAt": [
+            2,
+            0,
+            -4
+          ]
+        },
+        "story": "browser-cache"
+      },
+      {
+        "id": "hsts",
+        "anchorMesh": "HstsShield",
+        "focus": {
+          "pos": [
+            0,
+            4,
+            1
+          ],
+          "lookAt": [
+            0,
+            1,
+            -4
+          ]
+        },
+        "story": "browser-hsts"
+      },
+      {
+        "id": "socket",
+        "anchorMesh": "BrowserSocket",
+        "focus": {
+          "pos": [
+            -2,
+            1,
+            -0.5
+          ],
+          "lookAt": [
+            0,
+            -0.5,
+            -4
+          ]
+        },
+        "story": "browser-socket"
+      }
+    ]
+  },
+  {
+    "id": "dns",
+    "center": [
+      12,
+      1,
+      -20
+    ],
+    "overview": {
+      "pos": [
+        12,
+        8,
+        -7
+      ],
+      "lookAt": [
+        12,
+        1,
+        -20
+      ]
+    },
+    "hotspots": [
+      {
+        "id": "resolver",
+        "anchorMesh": "ResolverTower",
+        "focus": {
+          "pos": [
+            5,
+            3,
+            -13
+          ],
+          "lookAt": [
+            8,
+            2,
+            -20
+          ]
+        },
+        "story": "dns-resolver"
+      },
+      {
+        "id": "root",
+        "anchorMesh": "RootTower",
+        "focus": {
+          "pos": [
+            12,
+            5,
+            -12
+          ],
+          "lookAt": [
+            12,
+            3,
+            -20
+          ]
+        },
+        "story": "dns-root"
+      },
+      {
+        "id": "tld",
+        "anchorMesh": "TldTower",
+        "focus": {
+          "pos": [
+            19,
+            4,
+            -15
+          ],
+          "lookAt": [
+            16,
+            2,
+            -21
+          ]
+        },
+        "story": "dns-tld"
+      },
+      {
+        "id": "authoritative",
+        "anchorMesh": "AuthoritativeTower",
+        "focus": {
+          "pos": [
+            19,
+            2,
+            -25
+          ],
+          "lookAt": [
+            15,
+            2,
+            -22
+          ]
+        },
+        "story": "dns-authoritative"
+      },
+      {
+        "id": "local-path",
+        "anchorMesh": "LocalLookup",
+        "focus": {
+          "pos": [
+            5,
+            1,
+            -16
+          ],
+          "lookAt": [
+            7,
+            0,
+            -21
+          ]
+        },
+        "story": "dns-local-path"
+      }
+    ]
+  },
+  {
+    "id": "tcp",
+    "center": [
+      -8,
+      0,
+      -37
+    ],
+    "overview": {
+      "pos": [
+        -8,
+        7,
+        -25
+      ],
+      "lookAt": [
+        -8,
+        0,
+        -37
+      ]
+    },
+    "hotspots": [
+      {
+        "id": "syn",
+        "anchorMesh": "SynOrb",
+        "focus": {
+          "pos": [
+            -15,
+            3,
+            -30
+          ],
+          "lookAt": [
+            -12,
+            0,
+            -37
+          ]
+        },
+        "story": "tcp-syn"
+      },
+      {
+        "id": "synack",
+        "anchorMesh": "SynAckOrb",
+        "focus": {
+          "pos": [
+            -1,
+            3,
+            -33
+          ],
+          "lookAt": [
+            -4,
+            0,
+            -37
+          ]
+        },
+        "story": "tcp-synack"
+      },
+      {
+        "id": "ack",
+        "anchorMesh": "AckOrb",
+        "focus": {
+          "pos": [
+            -8,
+            2,
+            -31
+          ],
+          "lookAt": [
+            -8,
+            0,
+            -37
+          ]
+        },
+        "story": "tcp-ack"
+      },
+      {
+        "id": "socket-state",
+        "anchorMesh": "TcpSocketState",
+        "focus": {
+          "pos": [
+            -16,
+            4,
+            -39
+          ],
+          "lookAt": [
+            -12,
+            0,
+            -37
+          ]
+        },
+        "story": "tcp-socket-state"
+      }
+    ]
+  },
+  {
+    "id": "tls",
+    "center": [
+      8,
+      0,
+      -53
+    ],
+    "overview": {
+      "pos": [
+        8,
+        6,
+        -41
+      ],
+      "lookAt": [
+        8,
+        0,
+        -53
+      ]
+    },
+    "hotspots": [
+      {
+        "id": "certificate",
+        "anchorMesh": "CertificateSeal",
+        "focus": {
+          "pos": [
+            2,
+            3,
+            -47
+          ],
+          "lookAt": [
+            6,
+            1,
+            -53
+          ]
+        },
+        "story": "tls-certificate"
+      },
+      {
+        "id": "keys",
+        "anchorMesh": "KeyExchange",
+        "focus": {
+          "pos": [
+            14,
+            3,
+            -46
+          ],
+          "lookAt": [
+            10,
+            0,
+            -53
+          ]
+        },
+        "story": "tls-keys"
+      },
+      {
+        "id": "tunnel",
+        "anchorMesh": "EncryptedTunnel",
+        "focus": {
+          "pos": [
+            8,
+            1,
+            -44
+          ],
+          "lookAt": [
+            8,
+            0,
+            -55
+          ]
+        },
+        "story": "tls-tunnel"
+      },
+      {
+        "id": "negotiation",
+        "anchorMesh": "CipherDial",
+        "focus": {
+          "pos": [
+            15,
+            5,
+            -55
+          ],
+          "lookAt": [
+            10,
+            1,
+            -53
+          ]
+        },
+        "story": "tls-negotiation"
+      }
+    ]
+  },
+  {
+    "id": "edge",
+    "center": [
+      -4,
+      0,
+      -70
+    ],
+    "overview": {
+      "pos": [
+        -4,
+        10,
+        -56
+      ],
+      "lookAt": [
+        -4,
+        0,
+        -70
+      ]
+    },
+    "hotspots": [
+      {
+        "id": "anycast",
+        "anchorMesh": "AnycastBeacon",
+        "focus": {
+          "pos": [
+            -12,
+            5,
+            -63
+          ],
+          "lookAt": [
+            -9,
+            2,
+            -70
+          ]
+        },
+        "story": "edge-anycast"
+      },
+      {
+        "id": "balancer",
+        "anchorMesh": "LoadBalancer",
+        "focus": {
+          "pos": [
+            4,
+            4,
+            -63
+          ],
+          "lookAt": [
+            0,
+            1,
+            -70
+          ]
+        },
+        "story": "edge-balancer"
+      },
+      {
+        "id": "streams",
+        "anchorMesh": "PacketStreams",
+        "focus": {
+          "pos": [
+            -4,
+            7,
+            -61
+          ],
+          "lookAt": [
+            -4,
+            0,
+            -73
+          ]
+        },
+        "story": "edge-streams"
+      },
+      {
+        "id": "termination",
+        "anchorMesh": "EdgeTermination",
+        "focus": {
+          "pos": [
+            4,
+            2,
+            -74
+          ],
+          "lookAt": [
+            0,
+            0,
+            -70
+          ]
+        },
+        "story": "edge-termination"
+      }
+    ]
+  },
+  {
+    "id": "server",
+    "center": [
+      0,
+      0,
+      -88
+    ],
+    "overview": {
+      "pos": [
+        0,
+        7,
+        -76
+      ],
+      "lookAt": [
+        0,
+        0,
+        -88
+      ]
+    },
+    "hotspots": [
+      {
+        "id": "request",
+        "anchorMesh": "RequestParser",
+        "focus": {
+          "pos": [
+            -7,
+            3,
+            -81
+          ],
+          "lookAt": [
+            -3,
+            1,
+            -88
+          ]
+        },
+        "story": "server-request"
+      },
+      {
+        "id": "response",
+        "anchorMesh": "ResponseAssembler",
+        "focus": {
+          "pos": [
+            7,
+            3,
+            -81
+          ],
+          "lookAt": [
+            3,
+            1,
+            -88
+          ]
+        },
+        "story": "server-response"
+      },
+      {
+        "id": "render",
+        "anchorMesh": "RenderTree",
+        "focus": {
+          "pos": [
+            0,
+            4,
+            -80
+          ],
+          "lookAt": [
+            0,
+            0,
+            -89
+          ]
+        },
+        "story": "server-render"
+      },
+      {
+        "id": "subresources",
+        "anchorMesh": "SubresourceFan",
+        "focus": {
+          "pos": [
+            -6,
+            5,
+            -91
+          ],
+          "lookAt": [
+            -1,
+            1,
+            -88
+          ]
+        },
+        "story": "server-subresources"
+      }
+    ]
+  }
+]

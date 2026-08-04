@@ -2,6 +2,23 @@ import * as THREE from 'three';
 
 const q = (selector) => document.querySelector(selector);
 
+function appendTermText(parent, text, terms = {}) {
+  const keys = Object.keys(terms).sort((a, b) => b.length - a.length);
+  if (!keys.length) { parent.append(document.createTextNode(text)); return; }
+  const escaped = keys.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const matcher = new RegExp(`(${escaped.join('|')})`, 'g');
+  text.split(matcher).filter(Boolean).forEach((part) => {
+    const definition = terms[part];
+    if (!definition) { parent.append(document.createTextNode(part)); return; }
+    const term = document.createElement('span'); term.className = 'term'; term.tabIndex = 0; term.textContent = part;
+    term.dataset.tip = definition; term.setAttribute('aria-label', `${part}: ${definition}`); parent.append(term);
+  });
+}
+
+function paragraph(text, terms, className = '') {
+  const node = document.createElement('p'); if (className) node.className = className; appendTermText(node, text, terms); return node;
+}
+
 export class UI {
   constructor(state, hops, camera, scenes, copy) {
     this.state = state; this.hops = hops; this.camera = camera; this.scenes = scenes; this.copy = copy;
@@ -87,8 +104,12 @@ export class UI {
     });
   }
   populateCard(hop, spot, mode) {
-    q('#card-label').textContent = `${hop.title[mode]} · ${spot.id}`; q('#card-title').textContent = spot[mode].title; q('#card-body').textContent = spot[mode].body;
-    const quote = q('#interview-line'); quote.hidden = mode !== 'real'; quote.textContent = mode === 'real' ? spot.real.interviewLine : '';
+    const card = spot[mode];
+    q('#card-label').textContent = `${hop.title[mode]} · ${spot.id}`; q('#card-title').textContent = card.title;
+    const body = q('#card-body'); body.replaceChildren(paragraph(card.summary, card.terms, 'card-summary'));
+    card.sections.forEach((section) => { const wrapper = document.createElement('section'); const heading = document.createElement('h3'); heading.textContent = section.heading; wrapper.append(heading, paragraph(section.body, card.terms)); body.append(wrapper); });
+    if (card.deeper.length) { const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Go deeper'; const list = document.createElement('ul'); card.deeper.forEach((item) => { const entry = document.createElement('li'); appendTermText(entry, item, card.terms); list.append(entry); }); details.append(summary, list); body.append(details); }
+    const quote = q('#interview-line'); quote.hidden = !card.interviewLine; quote.textContent = card.interviewLine ?? '';
     const sources = q('#card-sources'); sources.hidden = mode !== 'real'; sources.innerHTML = mode === 'real' ? hop.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer">Source: ${source.label} ↗</a>`).join('') : '';
     q('#continue-button').innerHTML = this.state.value.hopIndex === this.hops.length - 1 ? 'See the result <span>→</span>' : 'Continue <span>→</span>';
   }

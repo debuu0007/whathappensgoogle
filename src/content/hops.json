@@ -1,74 +1,657 @@
 {
-  "ui": {
-    "heroEyebrow": "An interactive network story",
-    "heroTitle": "One keystroke.|A world of work.",
-    "heroBody": "You hit Enter. 300 milliseconds later, a page appears. This is everything that happened in between.",
-    "finaleEyebrow": "Request complete",
-    "finaleTitle": "The page appears.",
-    "finaleBody": "Six invisible systems worked together before your next thought arrived.",
-    "timerMs": 250
-  },
+  "version": 2,
   "hops": [
-  {
-    "id":"browser","title":{"easy":"Inside the browser","real":"URL parsing & policy"},"kicker":"THE REQUEST TAKES SHAPE","sources":[{"label":"what-happens-when","url":"https://github.com/alex/what-happens-when#url-is-parsed"},{"label":"MDN: TLS & HSTS","url":"https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"}],"center":[0,0,-4],
-    "overview":{"pos":[0,2.8,7],"lookAt":[0,0,-4]},
-    "hotspots":[
-      {"id":"parser","anchorMesh":"BrowserParser","focus":{"pos":[-4,1.7,1],"lookAt":[-1,0,-4]},"modes":["easy","real"],"easy":{"title":"Reading the address","body":"The browser separates the name you typed into useful pieces. It recognizes where you want to go before sending anything."},"real":{"title":"URL parsing","body":"The address is parsed into a scheme, hostname, port, path, query, and fragment. Invalid host characters are converted with IDNA/Punycode before name resolution.","interviewLine":"The browser first parses and normalizes the URL into the fields needed by the network stack."}},
-      {"id":"cache","anchorMesh":"BrowserCache","focus":{"pos":[4,1.5,0],"lookAt":[2,0,-4]},"modes":["easy","real"],"easy":{"title":"A shortcut check","body":"The browser checks whether it already knows the answer. A fresh saved copy can skip much of the trip."},"real":{"title":"Cache hierarchy","body":"The browser checks memory and disk caches, then relies on OS-level caches for DNS and network state. A valid cached response may be reused or revalidated.","interviewLine":"Caches can satisfy or shorten the request before a new network connection is opened."}},
-      {"id":"hsts","anchorMesh":"HstsShield","focus":{"pos":[0,4,1],"lookAt":[0,1,-4]},"modes":["easy","real"],"easy":{"title":"Require a safe route","body":"A safety list tells the browser to use the locked, private version of the site. It refuses to begin on an unprotected road."},"real":{"title":"HSTS upgrade","body":"A cached HSTS policy or preload-list entry upgrades the request to HTTPS before any insecure HTTP request is sent. This blocks SSL-stripping on the first visit for preloaded domains.","interviewLine":"HSTS can force HTTPS locally, before the browser sends an HTTP request."}},
-      {"id":"socket","anchorMesh":"BrowserSocket","focus":{"pos":[-2,1,-0.5],"lookAt":[0,-0.5,-4]},"modes":["real"],"easy":{"title":"Open a connection","body":"The browser asks the operating system for a path to the destination."},"real":{"title":"Socket syscall","body":"After resolution, the browser asks the OS for a socket using the destination address and service port—typically 443 for HTTPS. The kernel’s network stack handles transport and packetization.","interviewLine":"The browser hands the resolved address and port to the OS through a socket API."}}
-    ]
-  },
-  {
-    "id":"dns","title":{"easy":"Finding the address","real":"DNS resolution"},"kicker":"A NAME BECOMES A NUMBER","sources":[{"label":"what-happens-when: DNS","url":"https://github.com/alex/what-happens-when#dns-lookup"}],"center":[12,1,-20],
-    "overview":{"pos":[12,8,-7],"lookAt":[12,1,-20]},
-    "hotspots":[
-      {"id":"resolver","anchorMesh":"ResolverTower","focus":{"pos":[5,3,-13],"lookAt":[8,2,-20]},"modes":["easy","real"],"easy":{"title":"Ask the resolver","body":"DNS is the internet’s phonebook. Your resolver takes the name google.com and starts looking for its number."},"real":{"title":"Recursive resolver","body":"The stub resolver asks its configured recursive resolver for google.com. The resolver answers from cache or performs iterative queries on the client’s behalf.","interviewLine":"The client asks a recursive resolver, which either serves a cached record or walks the DNS hierarchy."}},
-      {"id":"root","anchorMesh":"RootTower","focus":{"pos":[12,5,-12],"lookAt":[12,3,-20]},"modes":["easy","real"],"easy":{"title":"Start at the root","body":"The first guide does not know Google’s address, but it knows where .com lives. It points the question onward."},"real":{"title":"Root nameserver referral","body":"A root nameserver returns a referral to the .com TLD nameservers. This is an iterative referral, not the final A or AAAA record.","interviewLine":"The root server delegates the lookup to the appropriate top-level-domain nameservers."}},
-      {"id":"tld","anchorMesh":"TldTower","focus":{"pos":[19,4,-15],"lookAt":[16,2,-21]},"modes":["easy","real"],"easy":{"title":"Find .com","body":"The .com guide knows which directory holds Google’s entry. One more handoff gets us close."},"real":{"title":"TLD referral","body":"A .com TLD nameserver returns the authoritative nameserver set for google.com, typically with glue when needed to avoid another circular lookup.","interviewLine":"The TLD server points the resolver to the domain’s authoritative nameservers."}},
-      {"id":"authoritative","anchorMesh":"AuthoritativeTower","focus":{"pos":[19,2,-25],"lookAt":[15,2,-22]},"modes":["easy","real"],"easy":{"title":"The final answer","body":"Google’s own directory returns an IP address. The glowing query now carries the number back to your browser."},"real":{"title":"Authoritative answer","body":"The authoritative server returns an A or AAAA answer with a TTL. The resolver caches the result and sends it to the client; the displayed 142.250.x.x is illustrative.","interviewLine":"The authoritative answer supplies the address and TTL that downstream caches may reuse."}}
-      ,{"id":"local-path","anchorMesh":"LocalLookup","focus":{"pos":[5,1,-16],"lookAt":[7,0,-21]},"modes":["real"],"easy":{"title":"Local shortcuts","body":"Your computer checks nearby shortcuts before asking the wider internet."},"real":{"title":"Local caches, hosts & gateway","body":"Before walking the hierarchy, browser and OS DNS caches plus the hosts file may answer. Otherwise the client sends DNS—usually UDP port 53—to its resolver and may use ARP to learn the local resolver or default gateway’s MAC address.","interviewLine":"Resolution starts with local caches and hosts; reaching an off-subnet resolver requires the link-layer path to the gateway."}}
-    ]
-  },
-  {
-    "id":"tcp","title":{"easy":"Building a connection","real":"TCP three-way handshake"},"kicker":"THREE MESSAGES BUILD A BRIDGE","sources":[{"label":"what-happens-when: TCP","url":"https://github.com/alex/what-happens-when#tcp"}],"center":[-8,0,-37],
-    "overview":{"pos":[-8,7,-25],"lookAt":[-8,0,-37]},
-    "hotspots":[
-      {"id":"syn","anchorMesh":"SynOrb","focus":{"pos":[-15,3,-30],"lookAt":[-12,0,-37]},"modes":["easy","real"],"easy":{"title":"Can we talk?","body":"Your computer sends a hello across the gap. It asks the server to open a reliable connection."},"real":{"title":"SYN","body":"The client sends a TCP segment with SYN set and an initial sequence number to the server’s destination port.","interviewLine":"SYN proposes a connection and establishes the client’s initial sequence space."}},
-      {"id":"synack","anchorMesh":"SynAckOrb","focus":{"pos":[-1,3,-33],"lookAt":[-4,0,-37]},"modes":["easy","real"],"easy":{"title":"I hear you","body":"The server answers that it is ready and heard the hello. Two pieces of the bridge lock together."},"real":{"title":"SYN-ACK","body":"The server acknowledges the client sequence number and sends its own SYN with a server initial sequence number.","interviewLine":"SYN-ACK proves the server received the client’s SYN and contributes its own sequence number."}},
-      {"id":"ack","anchorMesh":"AckOrb","focus":{"pos":[-8,2,-31],"lookAt":[-8,0,-37]},"modes":["easy","real"],"easy":{"title":"Connection ready","body":"Your computer confirms the reply. The final bridge piece clicks in and data can cross."},"real":{"title":"ACK","body":"The client acknowledges the server’s sequence number. Both sides now agree on connection state and can exchange ordered bytes.","interviewLine":"The final ACK confirms both directions and completes the TCP connection."}},
-      {"id":"socket-state","anchorMesh":"TcpSocketState","focus":{"pos":[-16,4,-39],"lookAt":[-12,0,-37]},"modes":["real"],"easy":{"title":"Track the connection","body":"Both ends remember which conversation each message belongs to."},"real":{"title":"Ports, sockets & sequence state","body":"A TCP flow is identified by source/destination addresses and ports. The handshake proves both directions work and synchronizes independently chosen sequence numbers—why two messages are not enough.","interviewLine":"Three messages validate bidirectional reachability while synchronizing both sequence spaces."}}
-    ]
-  },
-  {
-    "id":"tls","title":{"easy":"Making it private","real":"TLS handshake"},"kicker":"TRUST, THEN ENCRYPT","sources":[{"label":"what-happens-when: TLS","url":"https://github.com/alex/what-happens-when#tls-handshake"},{"label":"MDN: TLS","url":"https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"}],"center":[8,0,-53],
-    "overview":{"pos":[8,6,-41],"lookAt":[8,0,-53]},
-    "hotspots":[
-      {"id":"certificate","anchorMesh":"CertificateSeal","focus":{"pos":[2,3,-47],"lookAt":[6,1,-53]},"modes":["easy","real"],"easy":{"title":"Check the identity","body":"The site shows a hard-to-forge identity card. Your browser checks that it belongs to Google and was signed by someone it trusts."},"real":{"title":"Certificate chain","body":"The server certificate binds a public key to the hostname. The browser verifies signatures up to a trusted root, hostname coverage, validity, and revocation signals.","interviewLine":"Certificate validation authenticates the server before application data is trusted."}},
-      {"id":"keys","anchorMesh":"KeyExchange","focus":{"pos":[14,3,-46],"lookAt":[10,0,-53]},"modes":["easy","real"],"easy":{"title":"Create secret keys","body":"Both sides mix private ingredients into matching secret keys. The secret itself never travels across the network."},"real":{"title":"Ephemeral key agreement","body":"Modern TLS negotiates parameters and uses ephemeral key agreement to derive symmetric traffic keys. TLS 1.3 normally completes a full handshake in one round trip.","interviewLine":"TLS derives fast symmetric session keys after authenticating the server."}},
-      {"id":"tunnel","anchorMesh":"EncryptedTunnel","focus":{"pos":[8,1,-44],"lookAt":[8,0,-55]},"modes":["easy","real"],"easy":{"title":"Wrap the packet","body":"The packet gains glowing armor. From here on, anyone watching the road sees scrambled data instead of your request."},"real":{"title":"Encrypted records","body":"HTTP headers and bodies are carried inside authenticated TLS records. Encryption provides confidentiality while authentication detects tampering.","interviewLine":"After the handshake, HTTP travels inside authenticated, encrypted TLS records."}},
-      {"id":"negotiation","anchorMesh":"CipherDial","focus":{"pos":[15,5,-55],"lookAt":[10,1,-53]},"modes":["real"],"easy":{"title":"Agree on protection","body":"The two sides choose a shared way to protect the conversation."},"real":{"title":"TLS 1.3 negotiation","body":"ClientHello offers supported versions, cipher suites, signature algorithms, key shares, and ALPN protocols. ServerHello selects compatible parameters; a resumed session may reduce work, while 0-RTT data has replay caveats.","interviewLine":"ClientHello and ServerHello negotiate the cryptographic and application-protocol parameters."}}
-    ]
-  },
-  {
-    "id":"edge","title":{"easy":"Choosing the fastest door","real":"Google edge, anycast & load balancing"},"kicker":"ONE ADDRESS, A GLOBAL FRONT DOOR","sources":[{"label":"MDN: HTTP/2","url":"https://developer.mozilla.org/en-US/docs/Glossary/HTTP_2"},{"label":"MDN: HTTP/3","url":"https://developer.mozilla.org/en-US/docs/Glossary/HTTP_3"}],"center":[-4,0,-70],
-    "overview":{"pos":[-4,10,-56],"lookAt":[-4,0,-70]},
-    "hotspots":[
-      {"id":"anycast","anchorMesh":"AnycastBeacon","focus":{"pos":[-12,5,-63],"lookAt":[-9,2,-70]},"modes":["easy","real"],"easy":{"title":"A nearby entrance","body":"The same address is advertised from many places. The network steers your packet toward a nearby Google edge."},"real":{"title":"Anycast routing","body":"Multiple edge sites can advertise the same prefix with BGP. Network routing selects a reachable path; “nearest” means routing-topology proximity, not physical distance.","interviewLine":"Anycast lets one service address lead users toward a suitable nearby edge site."}},
-      {"id":"balancer","anchorMesh":"LoadBalancer","focus":{"pos":[4,4,-63],"lookAt":[0,1,-70]},"modes":["easy","real"],"easy":{"title":"Sort the traffic","body":"A load balancer is a traffic conductor. It sends each request to a healthy machine with room to help."},"real":{"title":"Edge load balancing","body":"The edge may terminate transport and TLS, apply policy, and route the HTTP request across healthy backends using locality, capacity, and service metadata.","interviewLine":"The edge terminates and routes traffic so individual backends are hidden behind one service."}},
-      {"id":"streams","anchorMesh":"PacketStreams","focus":{"pos":[-4,7,-61],"lookAt":[-4,0,-73]},"modes":["easy","real"],"easy":{"title":"Millions of journeys","body":"Your packet joins a river of requests. Shared infrastructure keeps every tiny journey moving without collisions."},"real":{"title":"Multiplexed traffic","body":"Persistent connections and multiplexing let many request streams share infrastructure efficiently. HTTP/2 multiplexes over TCP; HTTP/3 maps HTTP semantics onto QUIC over UDP.","interviewLine":"Modern transports multiplex many logical request streams across fewer long-lived connections."}},
-      {"id":"termination","anchorMesh":"EdgeTermination","focus":{"pos":[4,2,-74],"lookAt":[0,0,-70]},"modes":["real"],"easy":{"title":"Open at the edge","body":"The trusted edge opens the protected packet before routing it onward."},"real":{"title":"Edge termination & proxying","body":"A reverse proxy can terminate client TCP/QUIC and TLS, inspect HTTP, enforce policy, then reuse separate pooled connections to origin services. The client-to-edge and edge-to-origin legs are distinct.","interviewLine":"At a large edge, transport termination and origin proxying are usually separate connection legs."}}
-    ]
-  },
-  {
-    "id":"server","title":{"easy":"Building the answer","real":"Request handling & rendering"},"kicker":"THE RESPONSE BECOMES A PAGE","sources":[{"label":"what-happens-when: Rendering","url":"https://github.com/alex/what-happens-when#browser-rendering"}],"center":[0,0,-88],
-    "overview":{"pos":[0,7,-76],"lookAt":[0,0,-88]},
-    "hotspots":[
-      {"id":"request","anchorMesh":"RequestParser","focus":{"pos":[-7,3,-81],"lookAt":[-3,1,-88]},"modes":["easy","real"],"easy":{"title":"Read the request","body":"A server opens the packet and sees what page you asked for. It checks the request before choosing an answer."},"real":{"title":"HTTP request parsing","body":"The front end parses the method, path, headers, cookies, and request body, then applies routing, authentication, policy, and observability.","interviewLine":"The server parses HTTP and routes the request into the application pipeline."}},
-      {"id":"response","anchorMesh":"ResponseAssembler","focus":{"pos":[7,3,-81],"lookAt":[3,1,-88]},"modes":["easy","real"],"easy":{"title":"Assemble the response","body":"Fast caches provide familiar pieces; other parts are computed. The server packs the page instructions for the trip back."},"real":{"title":"Cache or compute","body":"The application may satisfy the request from an edge or service cache, call backend services, or query storage before serializing an HTTP response.","interviewLine":"Request handling is usually a cache-first pipeline before deeper service or storage work."}},
-      {"id":"render","anchorMesh":"RenderTree","focus":{"pos":[0,4,-80],"lookAt":[0,0,-89]},"modes":["easy","real"],"easy":{"title":"Turn code into pixels","body":"Back in the browser, page instructions become a tree of visible pieces. The browser sizes, paints, and layers them into the page you see."},"real":{"title":"DOM to pixels","body":"The browser parses HTML into the DOM and CSS into the CSSOM, builds a render tree, performs layout, paints layers, and composites them—while fetching discovered subresources.","interviewLine":"Rendering proceeds through DOM/CSSOM, render tree, layout, paint, and compositing."}},
-      {"id":"subresources","anchorMesh":"SubresourceFan","focus":{"pos":[-6,5,-91],"lookAt":[-1,1,-88]},"modes":["real"],"easy":{"title":"Fetch the pieces","body":"The page can ask for more styles, pictures, and code while it is being built."},"real":{"title":"Discovery & subresources","body":"The preload scanner and parser discover CSS, JavaScript, fonts, and images. These requests reuse eligible connections and caches; scripts and styles can affect parsing, layout, paint, and later compositing.","interviewLine":"HTML parsing triggers a dependency graph of subresource requests before the page stabilizes."}}
-    ]
-  }
+    {
+      "id": "browser",
+      "title": {
+        "easy": "Inside the browser",
+        "real": "URL parsing & policy"
+      },
+      "kicker": "THE REQUEST TAKES SHAPE",
+      "sources": [
+        {
+          "label": "what-happens-when",
+          "url": "https://github.com/alex/what-happens-when#url-is-parsed"
+        },
+        {
+          "label": "MDN: TLS & HSTS",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "parser",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Reading the address",
+            "summary": "The browser separates the name you typed into useful pieces. It recognizes where you want to go before sending anything.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "URL parsing",
+            "summary": "The address is parsed into a scheme, hostname, port, path, query, and fragment. Invalid host characters are converted with IDNA/Punycode before name resolution.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The browser first parses and normalizes the URL into the fields needed by the network stack."
+          }
+        },
+        {
+          "id": "cache",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "A shortcut check",
+            "summary": "The browser checks whether it already knows the answer. A fresh saved copy can skip much of the trip.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Cache hierarchy",
+            "summary": "The browser checks memory and disk caches, then relies on OS-level caches for DNS and network state. A valid cached response may be reused or revalidated.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Caches can satisfy or shorten the request before a new network connection is opened."
+          }
+        },
+        {
+          "id": "hsts",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Require a safe route",
+            "summary": "A safety list tells the browser to use the locked, private version of the site. It refuses to begin on an unprotected road.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "HSTS upgrade",
+            "summary": "A cached HSTS policy or preload-list entry upgrades the request to HTTPS before any insecure HTTP request is sent. This blocks SSL-stripping on the first visit for preloaded domains.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "HSTS can force HTTPS locally, before the browser sends an HTTP request."
+          }
+        },
+        {
+          "id": "socket",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Open a connection",
+            "summary": "The browser asks the operating system for a path to the destination.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Socket syscall",
+            "summary": "After resolution, the browser asks the OS for a socket using the destination address and service port—typically 443 for HTTPS. The kernel’s network stack handles transport and packetization.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The browser hands the resolved address and port to the OS through a socket API."
+          }
+        }
+      ]
+    },
+    {
+      "id": "dns",
+      "title": {
+        "easy": "Finding the address",
+        "real": "DNS resolution"
+      },
+      "kicker": "A NAME BECOMES A NUMBER",
+      "sources": [
+        {
+          "label": "what-happens-when: DNS",
+          "url": "https://github.com/alex/what-happens-when#dns-lookup"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "resolver",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Ask the resolver",
+            "summary": "DNS is the internet’s phonebook. Your resolver takes the name google.com and starts looking for its number.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Recursive resolver",
+            "summary": "The stub resolver asks its configured recursive resolver for google.com. The resolver answers from cache or performs iterative queries on the client’s behalf.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The client asks a recursive resolver, which either serves a cached record or walks the DNS hierarchy."
+          }
+        },
+        {
+          "id": "root",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Start at the root",
+            "summary": "The first guide does not know Google’s address, but it knows where .com lives. It points the question onward.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Root nameserver referral",
+            "summary": "A root nameserver returns a referral to the .com TLD nameservers. This is an iterative referral, not the final A or AAAA record.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The root server delegates the lookup to the appropriate top-level-domain nameservers."
+          }
+        },
+        {
+          "id": "tld",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Find .com",
+            "summary": "The .com guide knows which directory holds Google’s entry. One more handoff gets us close.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "TLD referral",
+            "summary": "A .com TLD nameserver returns the authoritative nameserver set for google.com, typically with glue when needed to avoid another circular lookup.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The TLD server points the resolver to the domain’s authoritative nameservers."
+          }
+        },
+        {
+          "id": "authoritative",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "The final answer",
+            "summary": "Google’s own directory returns an IP address. The glowing query now carries the number back to your browser.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Authoritative answer",
+            "summary": "The authoritative server returns an A or AAAA answer with a TTL. The resolver caches the result and sends it to the client; the displayed 142.250.x.x is illustrative.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The authoritative answer supplies the address and TTL that downstream caches may reuse."
+          }
+        },
+        {
+          "id": "local-path",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Local shortcuts",
+            "summary": "Your computer checks nearby shortcuts before asking the wider internet.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Local caches, hosts & gateway",
+            "summary": "Before walking the hierarchy, browser and OS DNS caches plus the hosts file may answer. Otherwise the client sends DNS—usually UDP port 53—to its resolver and may use ARP to learn the local resolver or default gateway’s MAC address.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Resolution starts with local caches and hosts; reaching an off-subnet resolver requires the link-layer path to the gateway."
+          }
+        }
+      ]
+    },
+    {
+      "id": "tcp",
+      "title": {
+        "easy": "Building a connection",
+        "real": "TCP three-way handshake"
+      },
+      "kicker": "THREE MESSAGES BUILD A BRIDGE",
+      "sources": [
+        {
+          "label": "what-happens-when: TCP",
+          "url": "https://github.com/alex/what-happens-when#tcp"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "syn",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Can we talk?",
+            "summary": "Your computer sends a hello across the gap. It asks the server to open a reliable connection.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "SYN",
+            "summary": "The client sends a TCP segment with SYN set and an initial sequence number to the server’s destination port.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "SYN proposes a connection and establishes the client’s initial sequence space."
+          }
+        },
+        {
+          "id": "synack",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "I hear you",
+            "summary": "The server answers that it is ready and heard the hello. Two pieces of the bridge lock together.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "SYN-ACK",
+            "summary": "The server acknowledges the client sequence number and sends its own SYN with a server initial sequence number.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "SYN-ACK proves the server received the client’s SYN and contributes its own sequence number."
+          }
+        },
+        {
+          "id": "ack",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Connection ready",
+            "summary": "Your computer confirms the reply. The final bridge piece clicks in and data can cross.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "ACK",
+            "summary": "The client acknowledges the server’s sequence number. Both sides now agree on connection state and can exchange ordered bytes.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The final ACK confirms both directions and completes the TCP connection."
+          }
+        },
+        {
+          "id": "socket-state",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Track the connection",
+            "summary": "Both ends remember which conversation each message belongs to.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Ports, sockets & sequence state",
+            "summary": "A TCP flow is identified by source/destination addresses and ports. The handshake proves both directions work and synchronizes independently chosen sequence numbers—why two messages are not enough.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Three messages validate bidirectional reachability while synchronizing both sequence spaces."
+          }
+        }
+      ]
+    },
+    {
+      "id": "tls",
+      "title": {
+        "easy": "Making it private",
+        "real": "TLS handshake"
+      },
+      "kicker": "TRUST, THEN ENCRYPT",
+      "sources": [
+        {
+          "label": "what-happens-when: TLS",
+          "url": "https://github.com/alex/what-happens-when#tls-handshake"
+        },
+        {
+          "label": "MDN: TLS",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "certificate",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Check the identity",
+            "summary": "The site shows a hard-to-forge identity card. Your browser checks that it belongs to Google and was signed by someone it trusts.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Certificate chain",
+            "summary": "The server certificate binds a public key to the hostname. The browser verifies signatures up to a trusted root, hostname coverage, validity, and revocation signals.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Certificate validation authenticates the server before application data is trusted."
+          }
+        },
+        {
+          "id": "keys",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Create secret keys",
+            "summary": "Both sides mix private ingredients into matching secret keys. The secret itself never travels across the network.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Ephemeral key agreement",
+            "summary": "Modern TLS negotiates parameters and uses ephemeral key agreement to derive symmetric traffic keys. TLS 1.3 normally completes a full handshake in one round trip.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "TLS derives fast symmetric session keys after authenticating the server."
+          }
+        },
+        {
+          "id": "tunnel",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Wrap the packet",
+            "summary": "The packet gains glowing armor. From here on, anyone watching the road sees scrambled data instead of your request.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Encrypted records",
+            "summary": "HTTP headers and bodies are carried inside authenticated TLS records. Encryption provides confidentiality while authentication detects tampering.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "After the handshake, HTTP travels inside authenticated, encrypted TLS records."
+          }
+        },
+        {
+          "id": "negotiation",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Agree on protection",
+            "summary": "The two sides choose a shared way to protect the conversation.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "TLS 1.3 negotiation",
+            "summary": "ClientHello offers supported versions, cipher suites, signature algorithms, key shares, and ALPN protocols. ServerHello selects compatible parameters; a resumed session may reduce work, while 0-RTT data has replay caveats.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "ClientHello and ServerHello negotiate the cryptographic and application-protocol parameters."
+          }
+        }
+      ]
+    },
+    {
+      "id": "edge",
+      "title": {
+        "easy": "Choosing the fastest door",
+        "real": "Google edge, anycast & load balancing"
+      },
+      "kicker": "ONE ADDRESS, A GLOBAL FRONT DOOR",
+      "sources": [
+        {
+          "label": "MDN: HTTP/2",
+          "url": "https://developer.mozilla.org/en-US/docs/Glossary/HTTP_2"
+        },
+        {
+          "label": "MDN: HTTP/3",
+          "url": "https://developer.mozilla.org/en-US/docs/Glossary/HTTP_3"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "anycast",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "A nearby entrance",
+            "summary": "The same address is advertised from many places. The network steers your packet toward a nearby Google edge.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Anycast routing",
+            "summary": "Multiple edge sites can advertise the same prefix with BGP. Network routing selects a reachable path; “nearest” means routing-topology proximity, not physical distance.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Anycast lets one service address lead users toward a suitable nearby edge site."
+          }
+        },
+        {
+          "id": "balancer",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Sort the traffic",
+            "summary": "A load balancer is a traffic conductor. It sends each request to a healthy machine with room to help.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Edge load balancing",
+            "summary": "The edge may terminate transport and TLS, apply policy, and route the HTTP request across healthy backends using locality, capacity, and service metadata.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The edge terminates and routes traffic so individual backends are hidden behind one service."
+          }
+        },
+        {
+          "id": "streams",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Millions of journeys",
+            "summary": "Your packet joins a river of requests. Shared infrastructure keeps every tiny journey moving without collisions.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Multiplexed traffic",
+            "summary": "Persistent connections and multiplexing let many request streams share infrastructure efficiently. HTTP/2 multiplexes over TCP; HTTP/3 maps HTTP semantics onto QUIC over UDP.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Modern transports multiplex many logical request streams across fewer long-lived connections."
+          }
+        },
+        {
+          "id": "termination",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Open at the edge",
+            "summary": "The trusted edge opens the protected packet before routing it onward.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Edge termination & proxying",
+            "summary": "A reverse proxy can terminate client TCP/QUIC and TLS, inspect HTTP, enforce policy, then reuse separate pooled connections to origin services. The client-to-edge and edge-to-origin legs are distinct.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "At a large edge, transport termination and origin proxying are usually separate connection legs."
+          }
+        }
+      ]
+    },
+    {
+      "id": "server",
+      "title": {
+        "easy": "Building the answer",
+        "real": "Request handling & rendering"
+      },
+      "kicker": "THE RESPONSE BECOMES A PAGE",
+      "sources": [
+        {
+          "label": "what-happens-when: Rendering",
+          "url": "https://github.com/alex/what-happens-when#browser-rendering"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "request",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Read the request",
+            "summary": "A server opens the packet and sees what page you asked for. It checks the request before choosing an answer.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "HTTP request parsing",
+            "summary": "The front end parses the method, path, headers, cookies, and request body, then applies routing, authentication, policy, and observability.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "The server parses HTTP and routes the request into the application pipeline."
+          }
+        },
+        {
+          "id": "response",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Assemble the response",
+            "summary": "Fast caches provide familiar pieces; other parts are computed. The server packs the page instructions for the trip back.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Cache or compute",
+            "summary": "The application may satisfy the request from an edge or service cache, call backend services, or query storage before serializing an HTTP response.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Request handling is usually a cache-first pipeline before deeper service or storage work."
+          }
+        },
+        {
+          "id": "render",
+          "modes": [
+            "easy",
+            "real"
+          ],
+          "easy": {
+            "title": "Turn code into pixels",
+            "summary": "Back in the browser, page instructions become a tree of visible pieces. The browser sizes, paints, and layers them into the page you see.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "DOM to pixels",
+            "summary": "The browser parses HTML into the DOM and CSS into the CSSOM, builds a render tree, performs layout, paints layers, and composites them—while fetching discovered subresources.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "Rendering proceeds through DOM/CSSOM, render tree, layout, paint, and compositing."
+          }
+        },
+        {
+          "id": "subresources",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Fetch the pieces",
+            "summary": "The page can ask for more styles, pictures, and code while it is being built.",
+            "sections": [],
+            "deeper": [],
+            "terms": {}
+          },
+          "real": {
+            "title": "Discovery & subresources",
+            "summary": "The preload scanner and parser discover CSS, JavaScript, fonts, and images. These requests reuse eligible connections and caches; scripts and styles can affect parsing, layout, paint, and later compositing.",
+            "sections": [],
+            "deeper": [],
+            "terms": {},
+            "interviewLine": "HTML parsing triggers a dependency graph of subresource requests before the page stabilizes."
+          }
+        }
+      ]
+    }
   ]
 }
