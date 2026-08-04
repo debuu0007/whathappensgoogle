@@ -25,6 +25,7 @@ export class UI {
     this.hero = q('#hero'); this.heroBrowser = q('#hero-browser'); this.loader = q('#loader'); this.chapter = q('#chapter'); this.card = q('#info-card');
     this.hotspotLayer = q('#hotspots'); this.progress = q('#progress'); this.finale = q('#finale'); this.line = q('#leader-line');
     this.vector = new THREE.Vector3(); this.buttons = new Map();
+    this.timerActive = false; this.timerFinished = false; this.timerFrame = 0; this.cardSwapTimer = 0;
     q('#hero-eyebrow').textContent = copy.heroEyebrow;
     const [heroLead, heroEmphasis] = copy.heroTitle.split('|'); q('#hero-title').innerHTML = `${heroLead}<br><em>${heroEmphasis}</em>`;
     q('#hero-body').textContent = copy.heroBody; q('#finale-eyebrow').textContent = copy.finaleEyebrow; q('#finale-title').textContent = copy.finaleTitle; q('#finale-body').textContent = copy.finaleBody;
@@ -66,7 +67,7 @@ export class UI {
     try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(location.href); q('#live-region').textContent = 'Deep link copied to clipboard.'; } } catch (error) { if (error.name !== 'AbortError') q('#live-region').textContent = 'Sharing is unavailable.'; }
   }
   next() { const s = this.state.value; s.hopIndex === this.hops.length - 1 ? this.state.send('FINISH') : this.state.send('GO_HOP', { index: s.hopIndex + 1 }); }
-  render({ value: s }) {
+  render({ value: s, reason }) {
     this.loader.classList.toggle('is-hidden', s.phase !== 'LOADING');
     this.hero.classList.toggle('is-hidden', s.phase !== 'HERO');
     this.heroBrowser.classList.toggle('is-hidden', s.phase !== 'HERO');
@@ -84,8 +85,9 @@ export class UI {
     const spot = hop.hotspots.find((item) => item.id === s.focusedHotspot);
     const showCard = s.phase === 'FOCUSED' && !s.transitionLock && spot;
     this.card.classList.toggle('is-open', !!showCard); this.card.setAttribute('aria-hidden', String(!showCard));
-    if (showCard) this.populateCard(hop, spot, s.mode);
-    if (s.phase === 'FINALE') this.playTimer();
+    if (showCard) this.populateCard(hop, spot, s.mode, reason === 'SET_MODE');
+    else { clearTimeout(this.cardSwapTimer); this.card.classList.remove('is-crossfading'); }
+    if (s.phase === 'FINALE') this.playTimer(); else this.resetTimer();
     document.body.classList.toggle('is-returning', s.phase === 'FINALE' && s.transitionLock);
     document.body.classList.toggle('is-encrypted', s.hopIndex >= 3 && !['LOADING', 'HERO'].includes(s.phase));
     document.body.classList.toggle('is-traveling', s.phase === 'TRAVELING');
@@ -104,15 +106,21 @@ export class UI {
       this.hotspotLayer.append(button); this.buttons.set(spot.id, { button, spot, index });
     });
   }
-  populateCard(hop, spot, mode) {
+  populateCard(hop, spot, mode, crossfade = false) {
     const card = spot[mode];
-    q('#card-label').textContent = `${hop.title[mode]} · ${spot.id}`; q('#card-title').textContent = card.title;
-    const body = q('#card-body'); body.replaceChildren(paragraph(card.summary, card.terms, 'card-summary'));
-    card.sections.forEach((section) => { const wrapper = document.createElement('section'); const heading = document.createElement('h3'); heading.textContent = section.heading; wrapper.append(heading, paragraph(section.body, card.terms)); body.append(wrapper); });
-    if (card.deeper.length) { const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Go deeper'; const list = document.createElement('ul'); card.deeper.forEach((item) => { const entry = document.createElement('li'); appendTermText(entry, item, card.terms); list.append(entry); }); details.append(summary, list); body.append(details); }
-    const quote = q('#interview-line'); quote.hidden = !card.interviewLine; quote.textContent = card.interviewLine ?? '';
-    const sources = q('#card-sources'); sources.hidden = mode !== 'real'; sources.innerHTML = mode === 'real' ? hop.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer">Source: ${source.label} ↗</a>`).join('') : '';
-    q('#continue-button').innerHTML = this.state.value.hopIndex === this.hops.length - 1 ? 'See the result <span>→</span>' : 'Continue <span>→</span>';
+    const apply = () => {
+      q('#card-label').textContent = `${hop.title[mode]} · ${spot.id}`; q('#card-title').textContent = card.title;
+      const body = q('#card-body'); body.replaceChildren(paragraph(card.summary, card.terms, 'card-summary'));
+      card.sections.forEach((section) => { const wrapper = document.createElement('section'); const heading = document.createElement('h3'); heading.textContent = section.heading; wrapper.append(heading, paragraph(section.body, card.terms)); body.append(wrapper); });
+      if (card.deeper.length) { const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Go deeper'; const list = document.createElement('ul'); card.deeper.forEach((item) => { const entry = document.createElement('li'); appendTermText(entry, item, card.terms); list.append(entry); }); details.append(summary, list); body.append(details); }
+      const quote = q('#interview-line'); quote.hidden = !card.interviewLine; quote.textContent = card.interviewLine ?? '';
+      const sources = q('#card-sources'); sources.hidden = mode !== 'real'; sources.innerHTML = mode === 'real' ? hop.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer">Source: ${source.label} ↗</a>`).join('') : '';
+      q('#continue-button').innerHTML = this.state.value.hopIndex === this.hops.length - 1 ? 'See the result <span>→</span>' : 'Continue <span>→</span>';
+    };
+    clearTimeout(this.cardSwapTimer);
+    if (!crossfade) { this.card.classList.remove('is-crossfading'); apply(); return; }
+    this.card.classList.add('is-crossfading');
+    this.cardSwapTimer = window.setTimeout(() => { apply(); this.card.classList.remove('is-crossfading'); }, 75);
   }
   updateAnchors() {
     const s = this.state.value; const hop = this.hops[s.hopIndex];
@@ -137,8 +145,14 @@ export class UI {
     q('#leader-layer').classList.toggle('is-visible', s.phase === 'FOCUSED' && !s.transitionLock);
   }
   playTimer() {
+    if (this.timerActive || this.timerFinished) return;
+    this.timerActive = true;
     const started = performance.now(); const node = q('#timer-value');
-    const tick = (now) => { const t = Math.min((now - started) / 1300, 1); node.textContent = Math.round(this.copy.timerMs * (1 - Math.pow(1 - t, 3))); if (t < 1 && this.state.value.phase === 'FINALE') requestAnimationFrame(tick); };
-    requestAnimationFrame(tick);
+    const tick = (now) => { const t = Math.min((now - started) / 1300, 1); node.textContent = Math.round(this.copy.timerMs * (1 - Math.pow(1 - t, 3))); if (t < 1 && this.state.value.phase === 'FINALE') this.timerFrame = requestAnimationFrame(tick); else { this.timerActive = false; this.timerFinished = t >= 1; } };
+    this.timerFrame = requestAnimationFrame(tick);
+  }
+  resetTimer() {
+    if (!this.timerActive && !this.timerFinished) return;
+    cancelAnimationFrame(this.timerFrame); this.timerActive = false; this.timerFinished = false; q('#timer-value').textContent = '0';
   }
 }

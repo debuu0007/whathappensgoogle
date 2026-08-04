@@ -7,6 +7,7 @@ export class CameraController {
     this.camera = camera; this.state = state; this.hops = hops; this.scenes = scenes;
     this.goalPos = camera.position.clone(); this.goalLook = new THREE.Vector3(0, 0, -4); this.look = this.goalLook.clone();
     this.travelTarget = new THREE.Vector3();
+    this.visitedHops = new Set();
     this.rail = null; this.railT = { value: 0 }; this.focusBase = null;
     this.controls = new OrbitControls(camera, canvas);
     Object.assign(this.controls, { enabled: false, enablePan: false, minDistance: 2.5, maxDistance: 9, enableDamping: true, dampingFactor: .08 });
@@ -38,11 +39,13 @@ export class CameraController {
   }
   overview(hop, establishing) {
     const duration = establishing ? .6 : 1.2;
+    const hold = establishing ? (this.visitedHops.has(hop.id) ? .8 : 2) : 0;
+    if (establishing) this.visitedHops.add(hop.id);
     gsap.to(this.goalPos, { x: hop.overview.pos[0], y: hop.overview.pos[1], z: hop.overview.pos[2], duration, ease: 'power3.inOut', overwrite: 'auto' });
     gsap.to(this.goalLook, { x: hop.overview.lookAt[0], y: hop.overview.lookAt[1], z: hop.overview.lookAt[2], duration, ease: 'power3.inOut', overwrite: 'auto' });
     gsap.to(this.camera, { fov: 50, duration, ease: 'power3.inOut', overwrite: 'auto', onUpdate: () => this.camera.updateProjectionMatrix(), onComplete: () => {
       const settle = () => this.state.send('SETTLED', { phase: 'OVERVIEW' });
-      establishing ? gsap.delayedCall(2, settle) : settle();
+      establishing ? gsap.delayedCall(hold, settle) : settle();
     }});
   }
   computeFocusPose(hopIndex, spot) {
@@ -84,6 +87,7 @@ export class CameraController {
     }});
   }
   restore(hopIndex, hop, spot) {
+    this.visitedHops.add(hop.id);
     const pose = spot ? this.computeFocusPose(hopIndex, spot) : { position: new THREE.Vector3().fromArray(hop.overview.pos), center: new THREE.Vector3().fromArray(hop.overview.lookAt), fov: 50, radius: 1, distance: 6 };
     if (!spot) this.scenes.freezeSway(hopIndex, false);
     this.goalPos.copy(pose.position); this.goalLook.copy(pose.center); this.look.copy(this.goalLook); this.camera.position.copy(this.goalPos);

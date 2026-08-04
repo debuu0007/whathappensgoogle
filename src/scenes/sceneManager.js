@@ -37,7 +37,9 @@ export class SceneManager {
       const { scene: replacement } = await this.assetLoader.gltf.loadAsync(entry.glb);
       replacement.name = fallback.name; replacement.position.copy(fallback.position); replacement.visible = fallback.visible; replacement.userData.dim = fallback.userData.dim;
       replacement.traverse((node) => this.captureMaterialState(node));
-      this.scene.add(replacement); this.scene.remove(fallback); fallback.traverse((node) => { node.geometry?.dispose?.(); node.material?.dispose?.(); }); this.groups[index] = replacement;
+      fallback.userData.stopStory?.(); this.scene.add(replacement); this.scene.remove(fallback); fallback.traverse((node) => { node.geometry?.dispose?.(); node.material?.dispose?.(); }); this.groups[index] = replacement;
+      if (this.focusState?.hopIndex === index) { this.currentStory = null; this.setFocus(index, this.focusState.anchorName, this.focusState.storyId); }
+      this.syncMaterialState(replacement);
     } catch (error) { console.warn(`Procedural fallback retained for ${this.hops[index].id}`, error); }
   }
   setActive(index) {
@@ -62,6 +64,17 @@ export class SceneManager {
       material.userData.targetEmissive = material.userData.baseEmissive;
     });
   }
+  syncMaterialState(group) {
+    const sceneDim = group.userData.dim ? .18 : 1;
+    group.traverse((node) => {
+      if (!node.isMesh || !node.material) return;
+      this.materials(node).forEach((material) => {
+        material.opacity = sceneDim * (material.userData.targetOpacity ?? material.userData.baseOpacity ?? 1);
+        if (material.color && material.userData.targetColor) material.color.copy(material.userData.targetColor);
+        if ('emissiveIntensity' in material) material.emissiveIntensity = sceneDim * (material.userData.targetEmissive ?? material.userData.baseEmissive ?? 0);
+      });
+    });
+  }
   isWithin(node, ancestor) {
     for (let current = node; current; current = current.parent) if (current === ancestor) return true;
     return false;
@@ -77,6 +90,7 @@ export class SceneManager {
   }
   setFocus(hopIndex, anchorName, storyId = null) {
     const active = this.groups[hopIndex]; if (!active) return;
+    this.focusState = { hopIndex, anchorName, storyId };
     const storyKey = storyId ? `${hopIndex}:${storyId}` : null;
     if (storyKey !== this.currentStory) {
       this.groups.forEach((group) => group?.userData.stopStory?.());

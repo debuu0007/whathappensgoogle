@@ -96,10 +96,6 @@ export function buildDns(hop) {
   const local = new THREE.Group(); local.name = 'LocalLookup'; local.position.set(-5.2, -.7, -1.8); local.userData.hotspotOffset = [0, .7, 0];
   const layers = ['a','b','c'].map((_, i) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.25 - i * .1, .12, .8), mat(0x172b3d, i === 2 ? palette.amber : palette.cyan, .35)); mesh.position.y = i * .28; return mesh; });
   local.add(...layers); group.add(local);
-  const storyPath = new THREE.CatmullRomCurve3([
-    local.position.clone().add(new THREE.Vector3(0, .65, 0)), ...points,
-    points[0].clone(), local.position.clone().add(new THREE.Vector3(0, .65, 0)),
-  ], false, 'catmullrom', .35);
   group.userData.update = (_delta, elapsed) => {
     if (group.userData.storyActive) return;
     const t = (elapsed * .085) % 1; orb.position.copy(returnPath.getPointAt(t)); orb.position.y += Math.sin(elapsed * 4) * .1;
@@ -107,18 +103,20 @@ export function buildDns(hop) {
     answerRing.scale.setScalar(.9 + Math.sin(elapsed * 3) * .12);
     [resolver, root, tld, authoritative].forEach((item, i) => { item.children.at(-2).rotation.y = elapsed * (.35 + i * .06); });
   };
-  const dnsJourney = () => {
-    const progress = { value: 0 }; const towers = [resolver, root, tld, authoritative];
-    answerRing.scale.setScalar(.08);
-    const timeline = gsap.timeline({ repeat: -1, repeatDelay: .7 })
+  const clientPoint = local.position.clone().add(new THREE.Vector3(0, .65, 0));
+  const dnsLeg = (from, to, receiver, { cacheCheck = false, final = false } = {}) => () => {
+    const midpoint = from.clone().lerp(to, .5); midpoint.y += 1.25;
+    const path = new THREE.QuadraticBezierCurve3(from, midpoint, to); const progress = { value: 0 };
+    answerRing.scale.setScalar(.08); orb.position.copy(from);
+    const timeline = gsap.timeline({ repeat: -1, repeatDelay: .75 })
       .set(progress, { value: 0 })
-      .to(progress, { value: 1, duration: 4.2, ease: 'none', onUpdate: () => orb.position.copy(storyPath.getPointAt(progress.value)) }, 0);
-    towers.forEach((towerItem, index) => {
-      const beacon = towerItem.children.at(-2);
-      timeline.to(beacon.scale, { x: 1.7, y: 1.7, z: 1.7, duration: .16, yoyo: true, repeat: 1 }, .75 + index * .67);
-    });
-    timeline.to(answerRing.scale, { x: 2.1, y: 2.1, z: 2.1, duration: .35, ease: 'back.out(2)' }, 3.55)
-      .to(answerRing.scale, { x: .08, y: .08, z: .08, duration: .3 }, 4.05);
+      .set(answerRing.scale, { x: .08, y: .08, z: .08 });
+    if (cacheCheck) layers.forEach((layer, index) => timeline.to(layer.scale, { x: 1.16, y: 1.16, z: 1.16, duration: .13, yoyo: true, repeat: 1 }, index * .13));
+    const depart = cacheCheck ? .52 : 0;
+    timeline.to(progress, { value: 1, duration: 1.25, ease: 'power1.inOut', onUpdate: () => orb.position.copy(path.getPointAt(progress.value)) }, depart)
+      .to(receiver.children.at(-2).scale, { x: 1.8, y: 1.8, z: 1.8, duration: .16, yoyo: true, repeat: 1 }, depart + 1.15);
+    if (final) timeline.to(answerRing.scale, { x: 2.1, y: 2.1, z: 2.1, duration: .32, ease: 'back.out(2)' }, depart + 1.3)
+      .to(answerRing.scale, { x: .08, y: .08, z: .08, duration: .28 }, depart + 1.72);
     return timeline;
   };
   const localStory = () => {
@@ -128,7 +126,10 @@ export function buildDns(hop) {
     return timeline;
   };
   installStories(group, hop, {
-    'dns-resolver': dnsJourney, 'dns-root': dnsJourney, 'dns-tld': dnsJourney, 'dns-authoritative': dnsJourney,
+    'dns-resolver': dnsLeg(clientPoint, points[0], resolver, { cacheCheck: true }),
+    'dns-root': dnsLeg(points[0], points[1], root),
+    'dns-tld': dnsLeg(points[1], points[2], tld),
+    'dns-authoritative': dnsLeg(points[2], points[3], authoritative, { final: true }),
     'dns-local-path': localStory,
   });
   return group;
@@ -173,7 +174,7 @@ export function buildTcp(hop) {
   });
   const socket = hotspotGroup('TcpSocketState', new THREE.Vector3(-4.4, .7, -1.5), [0, 1, 0]); for (let i = 0; i < 5; i++) { const column = new THREE.Mesh(new THREE.BoxGeometry(.22, .5 + i * .18, .22), mat(0x1b3448, i === 4 ? palette.cyan : palette.blue, .35)); column.position.x = (i - 2) * .35; socket.add(column); } group.add(socket);
   group.userData.update = (_delta, elapsed) => { if (group.userData.storyActive) return; const p = (elapsed * .22) % 1; syn.position.set(-4.2 + p * 4.4, 1 + Math.sin(p * Math.PI) * 1.4, 0); synack.position.set(4.2 - p * 4.4, 2 + Math.sin(p * Math.PI) * 1.1, .45); ack.position.set(-2.2 + p * 6.4, .6 + Math.sin(p * Math.PI) * .8, -.5); bridge.forEach((mesh, index) => { mesh.position.y = -.35 + Math.sin(elapsed * 1.2 - index * .5) * .05; }); };
-  const handshakeStory = (chosen, path, trail) => () => {
+  const handshakeStory = (chosen, path, trail, segment) => () => {
     [syn, synack, ack].forEach((orb) => { orb.visible = orb === chosen; });
     trail.visible = true; trail.scale.x = .02; const progress = { value: 0 };
     const timeline = gsap.timeline({ repeat: -1, repeatDelay: .65 })
@@ -181,15 +182,15 @@ export function buildTcp(hop) {
       .set(trail.scale, { x: .02 })
       .to(trail.scale, { x: 1, duration: 1.05, ease: 'power1.out' }, 0)
       .to(progress, { value: 1, duration: 1.25, ease: 'power1.inOut', onUpdate: () => chosen.position.copy(path.getPointAt(progress.value)) }, 0);
-    bridge.forEach((beam, index) => timeline.to(beam.scale, { y: 1.6, duration: .12, yoyo: true, repeat: 1 }, .22 + index * .24));
+    timeline.to(bridge[segment].scale, { x: 1.08, y: 1.8, z: 1.08, duration: .14, yoyo: true, repeat: 1, ease: 'back.out(2)' }, 1.08);
     timeline.to(chosen.scale, { x: 1.8, y: 1.8, z: 1.8, duration: .13, yoyo: true, repeat: 1 }, 1.22)
       .to(trail.scale, { x: .02, duration: .4 }, 1.4);
     return timeline;
   };
   installStories(group, hop, {
-    'tcp-syn': handshakeStory(syn, handshakePaths[0], trails[0]),
-    'tcp-synack': handshakeStory(synack, handshakePaths[1], trails[1]),
-    'tcp-ack': handshakeStory(ack, handshakePaths[2], trails[2]),
+    'tcp-syn': handshakeStory(syn, handshakePaths[0], trails[0], 0),
+    'tcp-synack': handshakeStory(synack, handshakePaths[1], trails[1], 1),
+    'tcp-ack': handshakeStory(ack, handshakePaths[2], trails[2], 2),
   });
   return group;
 }
