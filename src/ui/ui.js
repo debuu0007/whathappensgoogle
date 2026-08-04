@@ -25,6 +25,7 @@ export class UI {
     this.hero = q('#hero'); this.heroBrowser = q('#hero-browser'); this.loader = q('#loader'); this.chapter = q('#chapter'); this.card = q('#info-card');
     this.hotspotLayer = q('#hotspots'); this.progress = q('#progress'); this.finale = q('#finale'); this.line = q('#leader-line');
     this.vector = new THREE.Vector3(); this.buttons = new Map();
+    this.hotspotOrder = []; this.hotspotOrderKey = '';
     this.timerActive = false; this.timerFinished = false; this.timerFrame = 0; this.cardSwapTimer = 0;
     q('#hero-eyebrow').textContent = copy.heroEyebrow;
     const [heroLead, heroEmphasis] = copy.heroTitle.split('|'); q('#hero-title').innerHTML = `${heroLead}<br><em>${heroEmphasis}</em>`;
@@ -45,6 +46,7 @@ export class UI {
     window.addEventListener('keydown', (event) => {
       const s = this.state.value;
       if (event.key === 'Enter' && s.phase === 'HERO') this.state.send('START');
+      if (event.key === 'Enter' && s.phase === 'FOCUSED' && !s.transitionLock && !event.target.closest?.('a,button,summary,input,select,textarea,[contenteditable="true"]')) { event.preventDefault(); this.next(); }
       if (event.key === 'Escape' && s.phase === 'FOCUSED') this.state.send('UNFOCUS');
       if (event.key === 'ArrowRight' && !s.transitionLock && !['HERO','FINALE'].includes(s.phase)) this.next();
       if (event.key === 'ArrowLeft' && !s.transitionLock && s.hopIndex > 0) this.state.send('GO_HOP', { index: s.hopIndex - 1 });
@@ -66,7 +68,20 @@ export class UI {
     const data = { title: 'What happens when you hit Enter?', text: spot ? `${hop.title[this.state.value.mode]} — ${spot[this.state.value.mode].title}` : hop.title[this.state.value.mode], url: location.href };
     try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(location.href); q('#live-region').textContent = 'Deep link copied to clipboard.'; } } catch (error) { if (error.name !== 'AbortError') q('#live-region').textContent = 'Sharing is unavailable.'; }
   }
-  next() { const s = this.state.value; s.hopIndex === this.hops.length - 1 ? this.state.send('FINISH') : this.state.send('GO_HOP', { index: s.hopIndex + 1 }); }
+  next() {
+    const s = this.state.value;
+    if (s.phase === 'FOCUSED') {
+      const hop = this.hops[s.hopIndex];
+      const available = hop.hotspots.filter((spot) => spot.modes.includes(s.mode));
+      const ordered = this.hotspotOrderKey === `${s.hopIndex}:${s.mode}`
+        ? this.hotspotOrder.map((id) => available.find((spot) => spot.id === id)).filter(Boolean)
+        : [];
+      available.forEach((spot) => { if (!ordered.includes(spot)) ordered.push(spot); });
+      const nextSpot = ordered[ordered.findIndex((spot) => spot.id === s.focusedHotspot) + 1];
+      if (nextSpot) { this.state.send('FOCUS', { id: nextSpot.id }); return; }
+    }
+    s.hopIndex === this.hops.length - 1 ? this.state.send('FINISH') : this.state.send('GO_HOP', { index: s.hopIndex + 1 });
+  }
   render({ value: s, reason }) {
     this.loader.classList.toggle('is-hidden', s.phase !== 'LOADING');
     this.hero.classList.toggle('is-hidden', s.phase !== 'HERO');
@@ -96,6 +111,8 @@ export class UI {
   renderHotspots(hop, s) {
     const visible = ['OVERVIEW','FOCUSED'].includes(s.phase) && !s.transitionLock;
     this.hotspotLayer.innerHTML = ''; this.buttons.clear();
+    const orderKey = `${s.hopIndex}:${s.mode}`;
+    if (this.hotspotOrderKey !== orderKey) { this.hotspotOrderKey = orderKey; this.hotspotOrder = []; }
     hop.hotspots.filter((spot) => spot.modes.includes(s.mode)).forEach((spot, index) => {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'hotspot';
       button.innerHTML = `<i></i><span>${String(index + 1).padStart(2,'0')} · ${spot[s.mode].title}</span>`;
@@ -148,6 +165,7 @@ export class UI {
         return angle(a) - angle(b);
       });
     }
+    if (projected.length === this.buttons.size && projected.length > 1) this.hotspotOrder = projected.map((entry) => entry.spot.id);
     projected.forEach((entry, index) => {
       const label = entry.button.querySelector('span');
       if (label) label.textContent = `${String(index + 1).padStart(2, '0')} · ${entry.spot[s.mode].title}`;
