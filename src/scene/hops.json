@@ -21,7 +21,7 @@
     "hotspots": [
       {
         "id": "input",
-        "anchorMesh": "BrowserParser",
+        "anchorMesh": "BrowserInput",
         "story": "browser-input",
         "viewDir": [
           -0.6,
@@ -308,7 +308,7 @@
       },
       {
         "id": "congestion",
-        "anchorMesh": "TcpSocketState",
+        "anchorMesh": "CongestionWindow",
         "story": "tcp-congestion",
         "viewDir": [
           -0.8,
@@ -420,7 +420,7 @@
       },
       {
         "id": "resumption",
-        "anchorMesh": "CipherDial",
+        "anchorMesh": "SessionTicket",
         "story": "tls-resumption",
         "viewDir": [
           0.7,
@@ -515,7 +515,7 @@
       },
       {
         "id": "affinity",
-        "anchorMesh": "LoadBalancer",
+        "anchorMesh": "AffinityTable",
         "story": "edge-affinity",
         "viewDir": [
           0.8,
@@ -627,7 +627,7 @@
       },
       {
         "id": "compression",
-        "anchorMesh": "ResponseAssembler",
+        "anchorMesh": "CompressionCodec",
         "story": "server-compression",
         "viewDir": [
           -0.7,

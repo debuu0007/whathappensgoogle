@@ -147,6 +147,8 @@ export function buildBrowser(hop) {
   const group = platform(6.2, 0x111d29); group.userData.kind = 'browser';
   const frame = new THREE.Mesh(new THREE.BoxGeometry(7.6, 4.6, .28), mat(0x121c28, palette.cyan, .12)); frame.position.set(0, .7, 0); frame.userData.environment = true; group.add(frame);
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(7.05, 3.7), mat(0x071017, 0x062e36, .12)); screen.position.set(0, .45, .16); screen.userData.environment = true; group.add(screen);
+  const input = hotspotGroup('BrowserInput', new THREE.Vector3(2.55, 1.45, .38), [0, .45, 0]);
+  for (let i = 0; i < 4; i++) { const key = new THREE.Mesh(new THREE.BoxGeometry(.38, .18, .18), mat(i === 3 ? palette.amber : 0x28465a, i === 3 ? palette.amber : palette.cyan, .45)); key.position.x = (i - 1.5) * .46; input.add(key); } group.add(input);
   const parser = hotspotGroup('BrowserParser', new THREE.Vector3(-1.7, 1.35, .36), [0, .4, 0]);
   const urlParts = [1.25, 1.55, .95].map((width, index) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, .34, .14), mat(index === 1 ? palette.cyan : 0x36566b, index === 1 ? palette.cyan : 0x36566b, .45)); mesh.position.x = (index - 1) * 1.4; mesh.userData.home = mesh.position.x; parser.add(mesh); return mesh; }); group.add(parser);
   const cache = hotspotGroup('BrowserCache', new THREE.Vector3(2.35, -.15, .38), [0, .5, 0]);
@@ -169,10 +171,17 @@ export function buildTcp(hop) {
     new THREE.QuadraticBezierCurve3(new THREE.Vector3(-4.2, .8, -.5), new THREE.Vector3(0, 2.1, -.5), new THREE.Vector3(4.2, .8, -.5)),
   ];
   const trails = handshakePaths.map((path, index) => {
-    const trail = new THREE.Mesh(new THREE.TubeGeometry(path, 48, .035, 5, false), basic(index === 1 ? palette.cyan : palette.amber, .22));
-    trail.visible = false; group.add(trail); return trail;
+    const trail = new THREE.Mesh(new THREE.TubeGeometry(path, 48, .035, 5, false), basic(index === 1 ? palette.cyan : palette.amber, .12));
+    group.add(trail); return trail;
   });
+  const storyGroups = [
+    hotspotGroup('SynOrb', new THREE.Vector3(), [-4.2, 1, 0]),
+    hotspotGroup('SynAckOrb', new THREE.Vector3(), [4.2, 1.4, .45]),
+    hotspotGroup('AckOrb', new THREE.Vector3(), [0, .8, -.5]),
+  ];
+  [syn, synack, ack].forEach((orb, index) => { orb.name = `${orb.name}Packet`; storyGroups[index].add(bridge[index], orb, trails[index]); group.add(storyGroups[index]); });
   const socket = hotspotGroup('TcpSocketState', new THREE.Vector3(-4.4, .7, -1.5), [0, 1, 0]); for (let i = 0; i < 5; i++) { const column = new THREE.Mesh(new THREE.BoxGeometry(.22, .5 + i * .18, .22), mat(0x1b3448, i === 4 ? palette.cyan : palette.blue, .35)); column.position.x = (i - 2) * .35; socket.add(column); } group.add(socket);
+  const congestion = hotspotGroup('CongestionWindow', new THREE.Vector3(4.35, .65, -1.45), [0, 1, 0]); for (let i = 0; i < 7; i++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(.18, .3 + i * .17, .18), mat(0x17354b, i > 4 ? palette.amber : palette.cyan, .55)); bar.position.x = (i - 3) * .27; congestion.add(bar); } group.add(congestion);
   group.userData.update = (_delta, elapsed) => { if (group.userData.storyActive) return; const p = (elapsed * .22) % 1; syn.position.set(-4.2 + p * 4.4, 1 + Math.sin(p * Math.PI) * 1.4, 0); synack.position.set(4.2 - p * 4.4, 2 + Math.sin(p * Math.PI) * 1.1, .45); ack.position.set(-2.2 + p * 6.4, .6 + Math.sin(p * Math.PI) * .8, -.5); bridge.forEach((mesh, index) => { mesh.position.y = -.35 + Math.sin(elapsed * 1.2 - index * .5) * .05; }); };
   const handshakeStory = (chosen, path, trail, segment) => () => {
     [syn, synack, ack].forEach((orb) => { orb.visible = orb === chosen; });
@@ -206,6 +215,7 @@ export function buildTls(hop) {
   const keyParticles = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: palette.cyan, size: .08, transparent: true, opacity: .9, depthWrite: false })); keyParticles.geometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3)); keyParticles.visible = false; keys.add(keyParticles);
   const sharedGlyph = new THREE.Mesh(new THREE.TorusKnotGeometry(.32, .09, 48, 6), mat(palette.amber, palette.amber, 1.8)); sharedGlyph.visible = false; keys.add(sharedGlyph);
   const dial = hotspotGroup('CipherDial', new THREE.Vector3(3.7, .2, -2), [0, 1, 0]); for (let i = 0; i < 3; i++) { const ring = new THREE.Mesh(new THREE.TorusGeometry(.45 + i * .26, .035, 5, 36), basic(i === 2 ? palette.amber : palette.cyan, .65)); ring.rotation.x = Math.PI / 2; dial.add(ring); } group.add(dial);
+  const ticket = hotspotGroup('SessionTicket', new THREE.Vector3(-3.7, .2, -2.45), [0, .9, 0]); const ticketBody = new THREE.Mesh(new THREE.BoxGeometry(1.55, 1.05, .16), mat(0x182d43, palette.violet, .85)); ticket.add(ticketBody); for (let i = 0; i < 3; i++) { const mark = new THREE.Mesh(new THREE.BoxGeometry(.72 - i * .12, .045, .05), basic(i === 0 ? palette.amber : palette.cyan, .75)); mark.position.set(0, .26 - i * .25, .12); ticket.add(mark); } group.add(ticket);
   const armor = new THREE.Mesh(new THREE.DodecahedronGeometry(.65, 0), mat(0x173b50, palette.cyan, .75, { wireframe: true })); armor.position.set(0, .7, 0); tunnel.add(armor);
   group.userData.update = (_delta, elapsed) => { if (group.userData.storyActive) return; tunnel.children.forEach((ring, index) => { if (ring !== armor) ring.rotation.z = elapsed * (index % 2 ? .08 : -.08); }); seal.rotation.y = elapsed * .28; keys.children.slice(0, 2).forEach((key, index) => { key.rotation.y = elapsed * (index ? 1 : -1); }); dial.rotation.y = elapsed * .4; armor.rotation.y = elapsed * .7; };
   const certificateStory = () => {
@@ -240,6 +250,7 @@ export function buildEdge(hop) {
   const streams = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.055, 0), mat(palette.cyan, palette.cyan, 1.8), 1800); streams.name = 'PacketStreams'; streams.userData.hotspotOffset = [0, 4, 0]; const seeds = new Float32Array(1800 * 3); for (let i = 0; i < 1800; i++) { seeds[i * 3] = (Math.random() - .5) * 13; seeds[i * 3 + 1] = Math.random() * 5 - 1; seeds[i * 3 + 2] = (Math.random() - .5) * 11; } streams.userData.seeds = seeds; group.add(streams);
   const beacon = hotspotGroup('AnycastBeacon', new THREE.Vector3(-5.3, .1, -3.5), [0, 3.8, 0]); const mast = new THREE.Mesh(new THREE.CylinderGeometry(.08, .25, 4.2, 6), mat(0x253b49, palette.cyan, .3)); mast.position.y = 1.2; beacon.add(mast); for (let i = 0; i < 3; i++) { const ring = new THREE.Mesh(new THREE.TorusGeometry(.75 + i * .5, .025, 5, 48), basic(palette.cyan, .35)); ring.rotation.x = Math.PI / 2; ring.position.y = 3.2; beacon.add(ring); } group.add(beacon);
   const balancer = hotspotGroup('LoadBalancer', new THREE.Vector3(4.6, .1, -2.7), [0, 2.2, 0]); const hub = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), mat(palette.amber, palette.amber, .65)); hub.position.y = 1; balancer.add(hub); group.add(balancer);
+  const affinity = hotspotGroup('AffinityTable', new THREE.Vector3(-4.65, .05, 2.8), [0, 1.4, 0]); for (let row = 0; row < 3; row++) for (let col = 0; col < 4; col++) { const cell = new THREE.Mesh(new THREE.BoxGeometry(.36, .18, .36), mat(0x18384b, (row + col) % 3 === 0 ? palette.amber : palette.cyan, .55)); cell.position.set((col - 1.5) * .46, row * .3, (row - 1) * .16); affinity.add(cell); } group.add(affinity);
   const burstCount = 96; const burst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.09, 0), mat(palette.cyan, palette.cyan, 2.2), burstCount); burst.visible = false; group.add(burst);
   const unhealthy = new THREE.Mesh(rackGeo.clone(), mat(0x5a1218, 0xff263c, 2.6)); unhealthy.position.set(0, -.65, 0); unhealthy.visible = false; group.add(unhealthy);
   const burstStarts = Array.from({ length: burstCount }, (_, i) => new THREE.Vector3(-7.2 + (i % 12) * .16, 2.8 + Math.floor(i / 12) * .15, -4.5 + (i % 7) * .18));
@@ -271,6 +282,7 @@ export function buildServer(hop) {
   const group = platform(7, 0x111b28); group.userData.kind = 'server';
   const request = hotspotGroup('RequestParser', new THREE.Vector3(-3.9, .1, 1), [0, 1.4, 0]); for (let i = 0; i < 5; i++) { const slab = new THREE.Mesh(new THREE.BoxGeometry(1.8, .18, 1.2), mat(0x193248, i === 0 ? palette.amber : palette.cyan, .28)); slab.position.y = i * .3; request.add(slab); } group.add(request);
   const response = hotspotGroup('ResponseAssembler', new THREE.Vector3(3.8, .1, 1), [0, 1.5, 0]); for (let i = 0; i < 8; i++) { const part = new THREE.Mesh(new THREE.BoxGeometry(.45, .45, .45), mat(i % 3 === 0 ? palette.amber : 0x1a3a4b, i % 3 === 0 ? palette.amber : palette.cyan, .3)); part.position.set((i % 3 - 1) * .62, Math.floor(i / 3) * .58, 0); response.add(part); } group.add(response);
+  const compression = hotspotGroup('CompressionCodec', new THREE.Vector3(3.75, .1, -2.5), [0, 1.25, 0]); for (let i = 0; i < 5; i++) { const plate = new THREE.Mesh(new THREE.BoxGeometry(1.5 - i * .2, .12, .72), mat(0x173247, i === 4 ? palette.amber : palette.violet, .45)); plate.position.y = i * .22; compression.add(plate); } group.add(compression);
   const render = hotspotGroup('RenderTree', new THREE.Vector3(0, .1, -2), [0, 2, 0]); for (let i = 0; i < 7; i++) { const node = new THREE.Mesh(new THREE.IcosahedronGeometry(.22, 0), mat(i === 0 ? palette.amber : palette.cyan, i === 0 ? palette.amber : palette.cyan, .65)); node.position.set((i % 3 - 1) * 1.15, Math.floor(i / 3) * .85, 0); render.add(node); } group.add(render);
   const renderNodes = [...render.children]; const renderHomes = renderNodes.map((node) => node.position.clone());
   const layoutGrid = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 2.6, 6, 4), new THREE.MeshBasicMaterial({ color: palette.violet, wireframe: true, transparent: true, opacity: .5, depthWrite: false })); layoutGrid.position.set(0, .85, -.16); layoutGrid.visible = false; render.add(layoutGrid);
