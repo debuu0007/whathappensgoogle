@@ -1,6 +1,16 @@
-[
+{
+  "ui": {
+    "heroEyebrow": "An interactive network story",
+    "heroTitle": "One keystroke.|A world of work.",
+    "heroBody": "You hit Enter. 300 milliseconds later, a page appears. This is everything that happened in between.",
+    "finaleEyebrow": "Request complete",
+    "finaleTitle": "The page appears.",
+    "finaleBody": "Six invisible systems worked together before your next thought arrived.",
+    "timerMs": 250
+  },
+  "hops": [
   {
-    "id":"browser","title":{"easy":"Inside the browser","real":"URL parsing & policy"},"kicker":"THE REQUEST TAKES SHAPE","center":[0,0,-4],
+    "id":"browser","title":{"easy":"Inside the browser","real":"URL parsing & policy"},"kicker":"THE REQUEST TAKES SHAPE","sources":[{"label":"what-happens-when","url":"https://github.com/alex/what-happens-when#url-is-parsed"},{"label":"MDN: TLS & HSTS","url":"https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"}],"center":[0,0,-4],
     "overview":{"pos":[0,2.8,7],"lookAt":[0,0,-4]},
     "hotspots":[
       {"id":"parser","anchorMesh":"BrowserParser","focus":{"pos":[-4,1.7,1],"lookAt":[-1,0,-4]},"modes":["easy","real"],"easy":{"title":"Reading the address","body":"The browser separates the name you typed into useful pieces. It recognizes where you want to go before sending anything."},"real":{"title":"URL parsing","body":"The address is parsed into a scheme, hostname, port, path, query, and fragment. Invalid host characters are converted with IDNA/Punycode before name resolution.","interviewLine":"The browser first parses and normalizes the URL into the fields needed by the network stack."}},
@@ -10,7 +20,7 @@
     ]
   },
   {
-    "id":"dns","title":{"easy":"Finding the address","real":"DNS resolution"},"kicker":"A NAME BECOMES A NUMBER","center":[12,1,-20],
+    "id":"dns","title":{"easy":"Finding the address","real":"DNS resolution"},"kicker":"A NAME BECOMES A NUMBER","sources":[{"label":"what-happens-when: DNS","url":"https://github.com/alex/what-happens-when#dns-lookup"}],"center":[12,1,-20],
     "overview":{"pos":[12,8,-7],"lookAt":[12,1,-20]},
     "hotspots":[
       {"id":"resolver","anchorMesh":"ResolverTower","focus":{"pos":[5,3,-13],"lookAt":[8,2,-20]},"modes":["easy","real"],"easy":{"title":"Ask the resolver","body":"DNS is the internet’s phonebook. Your resolver takes the name google.com and starts looking for its number."},"real":{"title":"Recursive resolver","body":"The stub resolver asks its configured recursive resolver for google.com. The resolver answers from cache or performs iterative queries on the client’s behalf.","interviewLine":"The client asks a recursive resolver, which either serves a cached record or walks the DNS hierarchy."}},
@@ -21,7 +31,7 @@
     ]
   },
   {
-    "id":"tcp","title":{"easy":"Building a connection","real":"TCP three-way handshake"},"kicker":"THREE MESSAGES BUILD A BRIDGE","center":[-8,0,-37],
+    "id":"tcp","title":{"easy":"Building a connection","real":"TCP three-way handshake"},"kicker":"THREE MESSAGES BUILD A BRIDGE","sources":[{"label":"what-happens-when: TCP","url":"https://github.com/alex/what-happens-when#tcp"}],"center":[-8,0,-37],
     "overview":{"pos":[-8,7,-25],"lookAt":[-8,0,-37]},
     "hotspots":[
       {"id":"syn","anchorMesh":"SynOrb","focus":{"pos":[-15,3,-30],"lookAt":[-12,0,-37]},"modes":["easy","real"],"easy":{"title":"Can we talk?","body":"Your computer sends a hello across the gap. It asks the server to open a reliable connection."},"real":{"title":"SYN","body":"The client sends a TCP segment with SYN set and an initial sequence number to the server’s destination port.","interviewLine":"SYN proposes a connection and establishes the client’s initial sequence space."}},
@@ -31,7 +41,7 @@
     ]
   },
   {
-    "id":"tls","title":{"easy":"Making it private","real":"TLS handshake"},"kicker":"TRUST, THEN ENCRYPT","center":[8,0,-53],
+    "id":"tls","title":{"easy":"Making it private","real":"TLS handshake"},"kicker":"TRUST, THEN ENCRYPT","sources":[{"label":"what-happens-when: TLS","url":"https://github.com/alex/what-happens-when#tls-handshake"},{"label":"MDN: TLS","url":"https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"}],"center":[8,0,-53],
     "overview":{"pos":[8,6,-41],"lookAt":[8,0,-53]},
     "hotspots":[
       {"id":"certificate","anchorMesh":"CertificateSeal","focus":{"pos":[2,3,-47],"lookAt":[6,1,-53]},"modes":["easy","real"],"easy":{"title":"Check the identity","body":"The site shows a hard-to-forge identity card. Your browser checks that it belongs to Google and was signed by someone it trusts."},"real":{"title":"Certificate chain","body":"The server certificate binds a public key to the hostname. The browser verifies signatures up to a trusted root, hostname coverage, validity, and revocation signals.","interviewLine":"Certificate validation authenticates the server before application data is trusted."}},
@@ -41,7 +51,7 @@
     ]
   },
   {
-    "id":"edge","title":{"easy":"Choosing the fastest door","real":"Google edge, anycast & load balancing"},"kicker":"ONE ADDRESS, A GLOBAL FRONT DOOR","center":[-4,0,-70],
+    "id":"edge","title":{"easy":"Choosing the fastest door","real":"Google edge, anycast & load balancing"},"kicker":"ONE ADDRESS, A GLOBAL FRONT DOOR","sources":[{"label":"MDN: HTTP/2","url":"https://developer.mozilla.org/en-US/docs/Glossary/HTTP_2"},{"label":"MDN: HTTP/3","url":"https://developer.mozilla.org/en-US/docs/Glossary/HTTP_3"}],"center":[-4,0,-70],
     "overview":{"pos":[-4,10,-56],"lookAt":[-4,0,-70]},
     "hotspots":[
       {"id":"anycast","anchorMesh":"AnycastBeacon","focus":{"pos":[-12,5,-63],"lookAt":[-9,2,-70]},"modes":["easy","real"],"easy":{"title":"A nearby entrance","body":"The same address is advertised from many places. The network steers your packet toward a nearby Google edge."},"real":{"title":"Anycast routing","body":"Multiple edge sites can advertise the same prefix with BGP. Network routing selects a reachable path; “nearest” means routing-topology proximity, not physical distance.","interviewLine":"Anycast lets one service address lead users toward a suitable nearby edge site."}},
@@ -51,7 +61,7 @@
     ]
   },
   {
-    "id":"server","title":{"easy":"Building the answer","real":"Request handling & rendering"},"kicker":"THE RESPONSE BECOMES A PAGE","center":[0,0,-88],
+    "id":"server","title":{"easy":"Building the answer","real":"Request handling & rendering"},"kicker":"THE RESPONSE BECOMES A PAGE","sources":[{"label":"what-happens-when: Rendering","url":"https://github.com/alex/what-happens-when#browser-rendering"}],"center":[0,0,-88],
     "overview":{"pos":[0,7,-76],"lookAt":[0,0,-88]},
     "hotspots":[
       {"id":"request","anchorMesh":"RequestParser","focus":{"pos":[-7,3,-81],"lookAt":[-3,1,-88]},"modes":["easy","real"],"easy":{"title":"Read the request","body":"A server opens the packet and sees what page you asked for. It checks the request before choosing an answer."},"real":{"title":"HTTP request parsing","body":"The front end parses the method, path, headers, cookies, and request body, then applies routing, authentication, policy, and observability.","interviewLine":"The server parses HTTP and routes the request into the application pipeline."}},
@@ -60,4 +70,5 @@
       {"id":"subresources","anchorMesh":"SubresourceFan","focus":{"pos":[-6,5,-91],"lookAt":[-1,1,-88]},"modes":["real"],"easy":{"title":"Fetch the pieces","body":"The page can ask for more styles, pictures, and code while it is being built."},"real":{"title":"Discovery & subresources","body":"The preload scanner and parser discover CSS, JavaScript, fonts, and images. These requests reuse eligible connections and caches; scripts and styles can affect parsing, layout, paint, and later compositing.","interviewLine":"HTML parsing triggers a dependency graph of subresource requests before the page stabilizes."}}
     ]
   }
-]
+  ]
+}

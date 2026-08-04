@@ -3,19 +3,43 @@ import { assetManifest, hopAssetIds } from '../assets/manifest.js';
 import { gsap } from 'gsap';
 
 export class SceneManager {
-  constructor(scene, hops) {
+  constructor(scene, hops, renderer) {
     this.scene = scene;
     this.hops = hops;
-    this.groups = hops.map((hop, index) => {
-      const group = assetManifest[hopAssetIds[index]].procedural(hop);
-      group.name = `Hop:${hop.id}`; group.position.fromArray(hop.center);
-      group.traverse((node) => { if (node.isMesh && node.material) { node.userData.baseEmissive = node.material.emissiveIntensity ?? 0; node.userData.targetOpacity = 1; } });
-      scene.add(group); return group;
-    });
+    this.renderer = renderer;
+    this.groups = new Array(hops.length).fill(null);
+    this.ensure(0);
     this.setActive(-1);
   }
+  ensure(index) {
+    if (index < 0 || index >= this.hops.length) return null;
+    if (this.groups[index]) return this.groups[index];
+    const entry = assetManifest[hopAssetIds[index]];
+    const group = entry.procedural(this.hops[index]);
+    group.name = `Hop:${this.hops[index].id}`; group.position.fromArray(this.hops[index].center);
+    group.traverse((node) => { if (node.isMesh && node.material) { node.userData.baseEmissive = node.material.emissiveIntensity ?? 0; node.userData.targetOpacity = 1; } });
+    this.scene.add(group); this.groups[index] = group;
+    if (entry.glb) this.upgradeToGlb(index, entry, group);
+    return group;
+  }
+  async upgradeToGlb(index, entry, fallback) {
+    try {
+      const { createAssetLoader } = await import('../assets/loaders.js');
+      this.assetLoader ??= createAssetLoader(this.renderer);
+      const { scene: replacement } = await this.assetLoader.gltf.loadAsync(entry.glb);
+      replacement.name = fallback.name; replacement.position.copy(fallback.position); replacement.visible = fallback.visible; replacement.userData.dim = fallback.userData.dim;
+      replacement.traverse((node) => { if (node.isMesh && node.material) { node.userData.baseEmissive = node.material.emissiveIntensity ?? 0; node.userData.targetOpacity = 1; } });
+      this.scene.add(replacement); this.scene.remove(fallback); fallback.traverse((node) => { node.geometry?.dispose?.(); node.material?.dispose?.(); }); this.groups[index] = replacement;
+    } catch (error) { console.warn(`Procedural fallback retained for ${this.hops[index].id}`, error); }
+  }
   setActive(index) {
-    this.groups.forEach((group, i) => { group.visible = index < 0 ? i === 0 : Math.abs(i - index) <= 1; group.userData.dim = i !== index; });
+    this.ensure(index < 0 ? 0 : index);
+    if (index >= 0) { this.ensure(index - 1); window.setTimeout(() => this.ensure(index + 1), 250); }
+    this.groups.forEach((group, i) => { if (!group) return; group.visible = index < 0 ? i === 0 : Math.abs(i - index) <= 1; group.userData.dim = i !== index; });
+    if (index >= 2 && matchMedia('(max-width: 700px)').matches) {
+      const disposeIndex = index - 2; const stale = this.groups[disposeIndex];
+      if (stale) { stale.traverse((node) => { node.geometry?.dispose?.(); if (Array.isArray(node.material)) node.material.forEach((item) => item.dispose()); else node.material?.dispose?.(); }); this.scene.remove(stale); this.groups[disposeIndex] = null; }
+    }
   }
   anchor(hopIndex, name) { return this.groups[hopIndex]?.getObjectByName(name); }
   setFocus(hopIndex, anchorName) {
@@ -31,7 +55,7 @@ export class SceneManager {
   }
   playFinale() {
     this.setActive(5);
-    const page = this.groups[5]?.userData.finalePage;
+    const page = this.ensure(5)?.userData.finalePage;
     if (!page) return;
     page.visible = true;
     page.children.forEach((piece, index) => {
@@ -46,6 +70,7 @@ export class SceneManager {
   }
   update(_delta, elapsed) {
     this.groups.forEach((group, index) => {
+      if (!group) return;
       if (!group.visible) return;
       group.rotation.y = Math.sin(elapsed * .18 + index) * .025;
       group.userData.update?.(_delta, elapsed);

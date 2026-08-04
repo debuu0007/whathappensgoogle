@@ -34,7 +34,12 @@ export class JourneyState extends EventTarget {
       case 'SETTLED': this.patch({ ...payload, transitionLock: false }, type); break;
       case 'FINISH': this.patch({ phase: 'FINALE', focusedHotspot: null, transitionLock: true }, type); break;
       case 'REPLAY': this.patch({ phase: 'HERO', hopIndex: 0, focusedHotspot: null, transitionLock: false }, type); break;
-      case 'SET_MODE': this.patch({ mode: payload.mode }, type); break;
+      case 'SET_MODE': {
+        const spot = this.hops[s.hopIndex].hotspots.find((item) => item.id === s.focusedHotspot);
+        const unavailable = spot && !spot.modes.includes(payload.mode);
+        this.patch({ mode: payload.mode, ...(unavailable ? { phase: 'OVERVIEW', focusedHotspot: null, transitionLock: false } : {}) }, type);
+        break;
+      }
       case 'RESTORE': this.patch(payload, type); break;
       default: return false;
     }

@@ -24,9 +24,9 @@
         <p>Routing packet</p><div class="loader-track"><i></i></div><span>Preparing the path…</span>
       </section>
       <section id="hero" class="hero is-hidden" aria-labelledby="hero-title">
-        <p class="eyebrow">An interactive network story</p>
-        <h1 id="hero-title">One keystroke.<br /><em>A world of work.</em></h1>
-        <p>You hit Enter. 300 milliseconds later, a page appears. This is everything that happened in between.</p>
+        <p id="hero-eyebrow" class="eyebrow"></p>
+        <h1 id="hero-title"></h1>
+        <p id="hero-body"></p>
         <button id="start-button" class="start-button" type="button"><span>Press</span> Enter <i>↵</i></button>
       </section>
       <div id="hero-browser" class="hero-browser is-hidden" aria-hidden="true">
@@ -43,17 +43,19 @@
         <button id="card-close" class="card-close" type="button" aria-label="Close explanation">×</button>
         <p id="card-label" class="card-label"></p><h2 id="card-title"></h2><p id="card-body"></p>
         <blockquote id="interview-line"></blockquote>
+        <div id="card-sources" class="card-sources"></div>
         <button id="continue-button" class="continue-button" type="button">Continue <span>→</span></button>
       </aside>
       <section id="finale" class="finale is-hidden" aria-live="polite">
-        <p class="eyebrow">Request complete</p><p class="timer"><span id="timer-value">0</span><small>ms</small></p>
-        <h2>The page appears.</h2><p>Six invisible systems worked together before your next thought arrived.</p>
+        <p id="finale-eyebrow" class="eyebrow"></p><p class="timer"><span id="timer-value">0</span><small>ms</small></p>
+        <h2 id="finale-title"></h2><p id="finale-body"></p>
         <button id="replay-button" class="start-button" type="button">Ride again <i>↻</i></button>
       </section>
       <nav id="progress" class="progress" aria-label="Packet journey"></nav>
-      <footer><a href="https://github.com/alex/what-happens-when" target="_blank" rel="noreferrer">Based on what-happens-when ↗</a><span>Drag to look · ← → to travel · Esc to exit</span></footer>
+      <footer><a href="https://github.com/alex/what-happens-when" target="_blank" rel="noreferrer">Based on what-happens-when ↗</a><button id="share-button" type="button">Share this hop ↗</button><span>Drag to look · ← → to travel · Esc to exit</span></footer>
       <div id="live-region" class="sr-only" aria-live="assertive"></div>
     </main>
+    <noscript>This journey needs JavaScript and WebGL to run.</noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

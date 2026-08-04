@@ -20,6 +20,7 @@ export class CameraController {
     if (reason === 'FOCUS') this.focus(hop.hotspots.find((spot) => spot.id === s.focusedHotspot));
     if (reason === 'UNFOCUS') this.overview(hop, false);
     if (reason === 'FINISH') this.finale();
+    if (reason === 'RESTORE') this.restore(hop, hop.hotspots.find((spot) => spot.id === s.focusedHotspot));
     if (reason === 'REPLAY') this.hero();
   }
   hero() {
@@ -48,8 +49,16 @@ export class CameraController {
     gsap.to(this.goalPos, { x: spot.focus.pos[0], y: spot.focus.pos[1], z: spot.focus.pos[2], duration, ease: 'power3.inOut', overwrite: 'auto' });
     gsap.to(this.goalLook, { x: spot.focus.lookAt[0], y: spot.focus.lookAt[1], z: spot.focus.lookAt[2], duration, ease: 'power3.inOut', overwrite: 'auto' });
     gsap.to(this.camera, { fov: 42, duration, ease: 'power3.inOut', overwrite: 'auto', onUpdate: () => this.camera.updateProjectionMatrix(), onComplete: () => {
-      this.controls.target.copy(this.goalLook); this.controls.update(); this.state.send('SETTLED');
+      this.controls.target.copy(this.goalLook); this.controls.update();
+      const azimuth = this.controls.getAzimuthalAngle(); this.controls.minAzimuthAngle = azimuth - Math.PI / 6; this.controls.maxAzimuthAngle = azimuth + Math.PI / 6;
+      this.state.send('SETTLED');
     }});
+  }
+  restore(hop, spot) {
+    const pose = spot?.focus ?? hop.overview;
+    this.goalPos.fromArray(pose.pos); this.goalLook.fromArray(pose.lookAt); this.look.copy(this.goalLook); this.camera.position.copy(this.goalPos);
+    this.camera.fov = spot ? 42 : 50; this.camera.updateProjectionMatrix(); this.camera.lookAt(this.goalLook);
+    this.controls.target.copy(this.goalLook); this.controls.update(); queueMicrotask(() => this.state.send('SETTLED', { phase: spot ? 'FOCUSED' : 'OVERVIEW' }));
   }
   finale() {
     this.controls.enabled = false;
