@@ -135,10 +135,22 @@ export class UI {
       const onScreen = this.vector.z <= 1 && rawX > 12 && rawX < innerWidth - 12 && rawY > 12 && rawY < innerHeight - 12;
       button.style.transform = `translate3d(${rawX - 7.5}px,${rawY - 7.5}px,0)`; button.hidden = !onScreen || s.transitionLock;
       button.style.setProperty('--label-shift', '0px');
-      if (onScreen) projected.push({ button, y: rawY });
+      if (onScreen) projected.push({ button, spot, x: rawX, y: rawY });
       if (spot.id === s.focusedHotspot && s.phase === 'FOCUSED' && !s.transitionLock) {
         const rect = this.card.getBoundingClientRect(); this.line.setAttribute('x1', rawX); this.line.setAttribute('y1', rawY); this.line.setAttribute('x2', rect.left); this.line.setAttribute('y2', rect.top + 68);
       }
+    });
+    if (projected.length > 1) {
+      const center = projected.reduce((point, entry) => ({ x: point.x + entry.x, y: point.y + entry.y }), { x: 0, y: 0 });
+      center.x /= projected.length; center.y /= projected.length;
+      projected.sort((a, b) => {
+        const angle = (entry) => (Math.atan2(entry.x - center.x, center.y - entry.y) + Math.PI * 2) % (Math.PI * 2);
+        return angle(a) - angle(b);
+      });
+    }
+    projected.forEach((entry, index) => {
+      const label = entry.button.querySelector('span');
+      if (label) label.textContent = `${String(index + 1).padStart(2, '0')} · ${entry.spot[s.mode].title}`;
     });
     projected.sort((a, b) => a.y - b.y); let previous = -Infinity;
     projected.forEach((entry) => { const labelY = Math.max(entry.y, previous + 30); const shift = THREE.MathUtils.clamp(labelY - entry.y, -36, 36); entry.button.style.setProperty('--label-shift', `${shift}px`); previous = entry.y + shift; });
