@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-sites-worker.mjs",
     "preview": "vite preview",
     "assets": "bash scripts/optimize-assets.sh",
     "postinstall": "node scripts/copy-decoders.mjs"
