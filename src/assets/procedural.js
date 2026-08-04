@@ -11,9 +11,9 @@ export function basic(color, opacity = 1) { return new THREE.MeshBasicMaterial({
 export function platform(radius = 5.4, color = palette.steel) {
   const group = new THREE.Group();
   const base = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius + .5, .45, 8), mat(color, 0x10263a, .1));
-  base.position.y = -1.8; group.add(base);
+  base.position.y = -1.8; base.userData.environment = true; group.add(base);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(radius + .04, .035, 5, 96), basic(palette.cyan, .45));
-  ring.rotation.x = Math.PI / 2; ring.position.y = -1.55; group.add(ring);
+  ring.rotation.x = Math.PI / 2; ring.position.y = -1.55; ring.userData.environment = true; group.add(ring);
   return group;
 }
 
@@ -85,8 +85,8 @@ function glowOrb(name, color, radius = .28) {
 
 export function buildBrowser() {
   const group = platform(6.2, 0x111d29); group.userData.kind = 'browser';
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(7.6, 4.6, .28), mat(0x121c28, palette.cyan, .12)); frame.position.set(0, .7, 0); group.add(frame);
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(7.05, 3.7), mat(0x071017, 0x062e36, .12)); screen.position.set(0, .45, .16); group.add(screen);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(7.6, 4.6, .28), mat(0x121c28, palette.cyan, .12)); frame.position.set(0, .7, 0); frame.userData.environment = true; group.add(frame);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(7.05, 3.7), mat(0x071017, 0x062e36, .12)); screen.position.set(0, .45, .16); screen.userData.environment = true; group.add(screen);
   const parser = hotspotGroup('BrowserParser', new THREE.Vector3(-1.7, 1.35, .36), [0, .4, 0]);
   const urlParts = [1.25, 1.55, .95].map((width, index) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, .34, .14), mat(index === 1 ? palette.cyan : 0x36566b, index === 1 ? palette.cyan : 0x36566b, .45)); mesh.position.x = (index - 1) * 1.4; mesh.userData.home = mesh.position.x; parser.add(mesh); return mesh; }); group.add(parser);
   const cache = hotspotGroup('BrowserCache', new THREE.Vector3(2.35, -.15, .38), [0, .5, 0]);
@@ -119,7 +119,7 @@ export function buildTls() {
 
 export function buildEdge() {
   const group = platform(8.2, 0x0e1a26); group.userData.kind = 'edge';
-  const rackGeo = new THREE.BoxGeometry(.48, 1.8, .72), rackMat = mat(0x132b3b, palette.cyan, .16); const racks = new THREE.InstancedMesh(rackGeo, rackMat, 112); const matrix = new THREE.Matrix4(); let count = 0; for (let row = 0; row < 7; row++) for (let col = 0; col < 16; col++) { matrix.makeTranslation((col - 7.5) * .76, -.65, (row - 3) * 1.02); racks.setMatrixAt(count++, matrix); } racks.instanceMatrix.needsUpdate = true; group.add(racks);
+  const rackGeo = new THREE.BoxGeometry(.48, 1.8, .72), rackMat = mat(0x132b3b, palette.cyan, .16); const racks = new THREE.InstancedMesh(rackGeo, rackMat, 112); racks.userData.environment = true; const matrix = new THREE.Matrix4(); let count = 0; for (let row = 0; row < 7; row++) for (let col = 0; col < 16; col++) { matrix.makeTranslation((col - 7.5) * .76, -.65, (row - 3) * 1.02); racks.setMatrixAt(count++, matrix); } racks.instanceMatrix.needsUpdate = true; group.add(racks);
   const streams = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.055, 0), mat(palette.cyan, palette.cyan, 1.8), 1800); streams.name = 'PacketStreams'; streams.userData.hotspotOffset = [0, 4, 0]; const seeds = new Float32Array(1800 * 3); for (let i = 0; i < 1800; i++) { seeds[i * 3] = (Math.random() - .5) * 13; seeds[i * 3 + 1] = Math.random() * 5 - 1; seeds[i * 3 + 2] = (Math.random() - .5) * 11; } streams.userData.seeds = seeds; group.add(streams);
   const beacon = hotspotGroup('AnycastBeacon', new THREE.Vector3(-5.3, .1, -3.5), [0, 3.8, 0]); const mast = new THREE.Mesh(new THREE.CylinderGeometry(.08, .25, 4.2, 6), mat(0x253b49, palette.cyan, .3)); mast.position.y = 1.2; beacon.add(mast); for (let i = 0; i < 3; i++) { const ring = new THREE.Mesh(new THREE.TorusGeometry(.75 + i * .5, .025, 5, 48), basic(palette.cyan, .35)); ring.rotation.x = Math.PI / 2; ring.position.y = 3.2; beacon.add(ring); } group.add(beacon);
   const balancer = hotspotGroup('LoadBalancer', new THREE.Vector3(4.6, .1, -2.7), [0, 2.2, 0]); const hub = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), mat(palette.amber, palette.amber, .65)); hub.position.y = 1; balancer.add(hub); group.add(balancer);

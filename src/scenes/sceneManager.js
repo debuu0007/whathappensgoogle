@@ -8,6 +8,9 @@ export class SceneManager {
     this.hops = hops;
     this.renderer = renderer;
     this.groups = new Array(hops.length).fill(null);
+    this.focusLight = new THREE.SpotLight(0x8eefff, 0, 18, Math.PI / 4, .9, 1.7);
+    this.focusLight.castShadow = false; this.focusTarget = new THREE.Object3D(); this.focusLight.target = this.focusTarget;
+    this.scene.add(this.focusLight, this.focusTarget);
     this.ensure(0);
     this.setActive(-1);
   }
@@ -17,7 +20,7 @@ export class SceneManager {
     const entry = assetManifest[hopAssetIds[index]];
     const group = entry.procedural(this.hops[index]);
     group.name = `Hop:${this.hops[index].id}`; group.position.fromArray(this.hops[index].center);
-    group.traverse((node) => { if (node.isMesh && node.material) { node.userData.baseEmissive = node.material.emissiveIntensity ?? 0; node.userData.targetOpacity = 1; } });
+    group.traverse((node) => this.captureMaterialState(node));
     this.scene.add(group); this.groups[index] = group;
     if (entry.glb) this.upgradeToGlb(index, entry, group);
     return group;
@@ -28,7 +31,7 @@ export class SceneManager {
       this.assetLoader ??= createAssetLoader(this.renderer);
       const { scene: replacement } = await this.assetLoader.gltf.loadAsync(entry.glb);
       replacement.name = fallback.name; replacement.position.copy(fallback.position); replacement.visible = fallback.visible; replacement.userData.dim = fallback.userData.dim;
-      replacement.traverse((node) => { if (node.isMesh && node.material) { node.userData.baseEmissive = node.material.emissiveIntensity ?? 0; node.userData.targetOpacity = 1; } });
+      replacement.traverse((node) => this.captureMaterialState(node));
       this.scene.add(replacement); this.scene.remove(fallback); fallback.traverse((node) => { node.geometry?.dispose?.(); node.material?.dispose?.(); }); this.groups[index] = replacement;
     } catch (error) { console.warn(`Procedural fallback retained for ${this.hops[index].id}`, error); }
   }
@@ -42,6 +45,26 @@ export class SceneManager {
     }
   }
   anchor(hopIndex, name) { return this.groups[hopIndex]?.getObjectByName(name); }
+  materials(node) { return Array.isArray(node.material) ? node.material : [node.material]; }
+  captureMaterialState(node) {
+    if (!node.isMesh || !node.material) return;
+    this.materials(node).forEach((material) => {
+      material.userData.baseColor ??= material.color?.clone();
+      material.userData.baseEmissive = material.emissiveIntensity ?? 0;
+      material.userData.baseOpacity ??= material.opacity;
+      material.userData.targetColor ??= material.color?.clone();
+      material.userData.targetOpacity = material.userData.baseOpacity;
+      material.userData.targetEmissive = material.userData.baseEmissive;
+    });
+  }
+  isWithin(node, ancestor) {
+    for (let current = node; current; current = current.parent) if (current === ancestor) return true;
+    return false;
+  }
+  isEnvironment(node) {
+    for (let current = node; current; current = current.parent) if (current.userData.environment) return true;
+    return false;
+  }
   freezeSway(hopIndex, frozen) {
     const group = this.ensure(hopIndex); if (!group) return;
     group.userData.freezeSway = frozen;
@@ -52,11 +75,25 @@ export class SceneManager {
     const anchor = anchorName ? active.getObjectByName(anchorName) : null;
     active.traverse((node) => {
       if (!node.isMesh || !node.material) return;
-      const selected = !anchor || node === anchor || anchor.children.includes(node) || node.parent === anchor;
-      node.userData.targetOpacity = selected ? 1 : .22;
+      const selected = !anchor || this.isWithin(node, anchor);
+      const environment = !!anchor && !selected && this.isEnvironment(node);
       node.userData.highlight = !!anchor && selected;
-      node.material.depthWrite = selected;
+      this.materials(node).forEach((material) => {
+        const baseOpacity = material.userData.baseOpacity ?? 1;
+        material.userData.targetOpacity = baseOpacity * (selected ? 1 : environment ? .68 : .48);
+        material.userData.targetEmissive = (material.userData.baseEmissive ?? 0) * (selected ? 1.25 : environment ? .58 : .22);
+        const base = material.userData.baseColor;
+        if (!base || !material.color) return;
+        const hsl = {}; base.getHSL(hsl);
+        material.userData.targetColor.setHSL(hsl.h, hsl.s * (selected ? 1 : environment ? .5 : .16), hsl.l * (selected ? 1 : environment ? .76 : .64));
+      });
     });
+    if (anchor) {
+      const box = new THREE.Box3().setFromObject(anchor, true); const center = new THREE.Vector3();
+      box.isEmpty() ? anchor.getWorldPosition(center) : box.getCenter(center);
+      this.focusTarget.position.copy(center); this.focusLight.position.copy(center).add(new THREE.Vector3(2.5, 4, 3));
+      this.focusLight.userData.targetIntensity = 3.2;
+    } else this.focusLight.userData.targetIntensity = 0;
   }
   playFinale() {
     this.setActive(5);
@@ -74,6 +111,7 @@ export class SceneManager {
     });
   }
   update(_delta, elapsed) {
+    this.focusLight.intensity = THREE.MathUtils.damp(this.focusLight.intensity, this.focusLight.userData.targetIntensity ?? 0, 7, _delta);
     this.groups.forEach((group, index) => {
       if (!group) return;
       if (!group.visible) return;
@@ -81,13 +119,17 @@ export class SceneManager {
       group.userData.update?.(_delta, elapsed);
       group.traverse((node) => {
         if (!node.isMesh || !node.material) return;
-        const sceneDim = group.userData.dim ? .12 : 1;
-        const target = sceneDim * (node.userData.targetOpacity ?? 1);
-        node.material.opacity = THREE.MathUtils.damp(node.material.opacity, target, 6, _delta);
-        if ('emissiveIntensity' in node.material) {
-          const breath = node.userData.highlight ? .8 + (1 + Math.sin(elapsed * 3)) * .55 : (node.userData.baseEmissive ?? .12);
-          node.material.emissiveIntensity = THREE.MathUtils.damp(node.material.emissiveIntensity, breath, 5, _delta);
-        }
+        const sceneDim = group.userData.dim ? .18 : 1;
+        this.materials(node).forEach((material) => {
+          const target = sceneDim * (material.userData.targetOpacity ?? material.userData.baseOpacity ?? 1);
+          material.opacity = THREE.MathUtils.damp(material.opacity, target, 6, _delta);
+          if (material.color && material.userData.targetColor) material.color.lerp(material.userData.targetColor, 1 - Math.exp(-6 * _delta));
+          if ('emissiveIntensity' in material) {
+            const base = material.userData.targetEmissive ?? material.userData.baseEmissive ?? 0;
+            const breath = node.userData.highlight ? Math.max(.65, base) + (1 + Math.sin(elapsed * 3)) * .28 : base;
+            material.emissiveIntensity = THREE.MathUtils.damp(material.emissiveIntensity, breath * sceneDim, 5, _delta);
+          }
+        });
       });
     });
   }
