@@ -69,8 +69,13 @@ export class UI {
     const s = this.state.value; const hop = this.hops[s.hopIndex];
     this.buttons.forEach(({ button, spot }) => {
       const anchor = this.scenes.anchor(s.hopIndex, spot.anchorMesh); if (!anchor) return;
-      anchor.getWorldPosition(this.vector); this.vector.project(this.camera);
-      const x = (this.vector.x * .5 + .5) * innerWidth, y = (-this.vector.y * .5 + .5) * innerHeight;
+      const offset = anchor.userData.hotspotOffset;
+      if (offset) { this.vector.fromArray(offset); anchor.localToWorld(this.vector); }
+      else anchor.getWorldPosition(this.vector);
+      this.vector.project(this.camera);
+      const rawX = (this.vector.x * .5 + .5) * innerWidth, rawY = (-this.vector.y * .5 + .5) * innerHeight;
+      const x = THREE.MathUtils.clamp(rawX, 24, innerWidth - 210);
+      const y = THREE.MathUtils.clamp(rawY, 90, innerHeight - 110);
       button.style.transform = `translate3d(${x}px,${y}px,0)`; button.hidden = this.vector.z > 1 || s.transitionLock;
       if (spot.id === s.focusedHotspot && s.phase === 'FOCUSED' && !s.transitionLock) {
         const rect = this.card.getBoundingClientRect(); this.line.setAttribute('x1', x); this.line.setAttribute('y1', y); this.line.setAttribute('x2', rect.left); this.line.setAttribute('y2', rect.top + 68);

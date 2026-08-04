@@ -6,6 +6,7 @@ import { createLoop } from './core/loop.js';
 import { SceneManager } from './scenes/sceneManager.js';
 import { CameraController } from './camera/controller.js';
 import { UI } from './ui/ui.js';
+import { createAssetLoader } from './assets/loaders.js';
 import './styles.css';
 
 const canvas = document.querySelector('#world');
@@ -19,9 +20,14 @@ const stars = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMater
 const starPos = new Float32Array(1800 * 3); for (let i=0;i<starPos.length;i+=3){starPos[i]=(Math.random()-.5)*90;starPos[i+1]=(Math.random()-.5)*35;starPos[i+2]=-Math.random()*120+15;} stars.geometry.setAttribute('position',new THREE.BufferAttribute(starPos,3)); scene.add(stars);
 
 const state = new JourneyState(hops); const scenes = new SceneManager(scene, hops); const cameraController = new CameraController(camera, canvas, state, hops); const ui = new UI(state, hops, camera, scenes);
+const assetLoader = createAssetLoader(renderer); void assetLoader;
 const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera)); const bloom = new BloomEffect({ intensity: .8, luminanceThreshold: .4, luminanceSmoothing: .3, mipmapBlur: true }); composer.addPass(new EffectPass(camera, bloom));
 const resize = () => { const width=innerWidth,height=innerHeight; camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);composer.setSize(width,height);}; addEventListener('resize',resize,{passive:true});
-state.addEventListener('change',({detail})=>{ if(detail.reason==='FINISH'){ window.setTimeout(()=>state.send('SETTLED'),1400); } });
+state.addEventListener('change',({detail})=>{
+  const s=detail.value; const hop=hops[s.hopIndex]; const spot=hop.hotspots.find((item)=>item.id===s.focusedHotspot);
+  scenes.setFocus(s.hopIndex, spot?.anchorMesh ?? null);
+  if(detail.reason==='FINISH'){ window.setTimeout(()=>state.send('SETTLED'),1400); }
+});
 
 const loop = createLoop((delta, elapsed) => { cameraController.update(delta, elapsed); scenes.update(delta, elapsed); stars.rotation.y += delta * .006; ui.updateAnchors(); }, () => composer.render());
 loop.start();

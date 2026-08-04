@@ -36,7 +36,7 @@ Total ≤ 25MB · hero ≤ 2.5MB (<3s on 4G) · per hop ≤ 4MB · 60fps desktop
 
 ## Milestone status
 - [x] M0 skeleton — full journey navigable with placeholder cubes
-- [ ] M1 vertical slice — DNS hop at final quality (**go/no-go checkpoint**)
+- [x] M1 vertical slice — DNS hop at final quality (**go/no-go checkpoint**)
 - [ ] M2 all 6 hops + hero + finale
 - [ ] M3 polish/perf/mobile + playtest
 - [ ] M4 launch day (planned distribution day, not a cold drop)
@@ -47,3 +47,6 @@ Total ≤ 25MB · hero ≤ 2.5MB (<3s on 4G) · per hop ≤ 4MB · 60fps desktop
 ## Working notes
 - Repo folder was empty at project start (2026-08-04); `git log` in this dir shows commits from an unrelated parent repo up the tree — **run `git init` here before first commit** so this project gets its own history.
 - Style bible (master image prompt) to be written at M1 and pasted here once locked.
+
+## Style bible (locked at M1)
+Stylized low-poly network dioramas suspended in a near-black void; octagonal steel plinths, chamfered geometric machinery, cyan for active data paths, amber for handshakes/answers, violet for trust boundaries, restrained fog, thin luminous infrastructure lines, no realistic textures, no shadows, and continuous low-amplitude motion. Typography is technical but human: Manrope display copy with compact DM Mono telemetry.
