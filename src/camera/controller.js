@@ -64,7 +64,7 @@ export class CameraController {
     const fov = spot.focus?.override ? (spot.focus.fov ?? 42) : 42;
     const vertical = THREE.MathUtils.degToRad(fov);
     const horizontal = 2 * Math.atan(Math.tan(vertical / 2) * this.camera.aspect);
-    const distance = THREE.MathUtils.clamp((sphere.radius / Math.sin(Math.min(vertical, horizontal) / 2)) * 1.35, 2.8, 12);
+    const distance = Math.max(2.8, (sphere.radius / Math.tan(Math.min(vertical, horizontal) / 2)) * 1.35);
     const direction = new THREE.Vector3().fromArray(spot.viewDir ?? [0.72, .32, 1]).normalize();
     const position = sphere.center.clone().addScaledVector(direction, distance);
     if (spot.focus?.override) {
