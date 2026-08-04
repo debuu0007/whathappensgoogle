@@ -76,7 +76,7 @@ export class UI {
     const hop = this.hops[s.hopIndex];
     q('#chapter-index').textContent = `${String(s.hopIndex + 1).padStart(2,'0')} / ${String(this.hops.length).padStart(2,'0')}`;
     q('#chapter-title').textContent = hop.title[s.mode]; q('#chapter-kicker').textContent = hop.kicker;
-    q('#mode-toggle').setAttribute('aria-pressed', String(s.mode === 'real')); q('[data-mode-label]').textContent = s.mode === 'real' ? 'Interview mode' : 'Easy mode';
+    q('#mode-toggle').setAttribute('aria-pressed', String(s.mode === 'real')); q('[data-mode-label]').textContent = s.mode === 'real' ? 'Interview mode' : 'Guided';
     this.progress.querySelectorAll('button').forEach((button, index) => button.classList.toggle('is-active', index === s.hopIndex));
     this.progress.style.setProperty('--journey', `${(s.hopIndex / (this.hops.length - 1)) * 100}%`);
     this.scenes.setActive(['HERO','LOADING'].includes(s.phase) ? -1 : s.hopIndex);

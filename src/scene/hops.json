@@ -20,6 +20,28 @@
     },
     "hotspots": [
       {
+        "id": "input",
+        "anchorMesh": "BrowserParser",
+        "story": "browser-input",
+        "viewDir": [
+          -0.6,
+          0.25,
+          1
+        ],
+        "focus": {
+          "pos": [
+            -4,
+            1.7,
+            1
+          ],
+          "lookAt": [
+            -1,
+            0,
+            -4
+          ]
+        }
+      },
+      {
         "id": "parser",
         "anchorMesh": "BrowserParser",
         "focus": {
@@ -283,6 +305,28 @@
           ]
         },
         "story": "tcp-socket-state"
+      },
+      {
+        "id": "congestion",
+        "anchorMesh": "TcpSocketState",
+        "story": "tcp-congestion",
+        "viewDir": [
+          -0.8,
+          0.35,
+          1
+        ],
+        "focus": {
+          "pos": [
+            -16,
+            4,
+            -39
+          ],
+          "lookAt": [
+            -12,
+            0,
+            -37
+          ]
+        }
       }
     ]
   },
@@ -373,6 +417,28 @@
           ]
         },
         "story": "tls-negotiation"
+      },
+      {
+        "id": "resumption",
+        "anchorMesh": "CipherDial",
+        "story": "tls-resumption",
+        "viewDir": [
+          0.7,
+          0.25,
+          1
+        ],
+        "focus": {
+          "pos": [
+            15,
+            5,
+            -55
+          ],
+          "lookAt": [
+            10,
+            1,
+            -53
+          ]
+        }
       }
     ]
   },
@@ -446,6 +512,28 @@
           ]
         },
         "story": "edge-streams"
+      },
+      {
+        "id": "affinity",
+        "anchorMesh": "LoadBalancer",
+        "story": "edge-affinity",
+        "viewDir": [
+          0.8,
+          0.3,
+          1
+        ],
+        "focus": {
+          "pos": [
+            4,
+            4,
+            -63
+          ],
+          "lookAt": [
+            0,
+            1,
+            -70
+          ]
+        }
       },
       {
         "id": "termination",
@@ -536,6 +624,28 @@
           ]
         },
         "story": "server-render"
+      },
+      {
+        "id": "compression",
+        "anchorMesh": "ResponseAssembler",
+        "story": "server-compression",
+        "viewDir": [
+          -0.7,
+          0.3,
+          1
+        ],
+        "focus": {
+          "pos": [
+            7,
+            3,
+            -81
+          ],
+          "lookAt": [
+            3,
+            1,
+            -88
+          ]
+        }
       },
       {
         "id": "subresources",

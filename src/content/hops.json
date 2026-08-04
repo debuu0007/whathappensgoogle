@@ -5,20 +5,68 @@
       "id": "browser",
       "title": {
         "easy": "Inside the browser",
-        "real": "URL parsing & policy"
+        "real": "Browser intake & policy"
       },
       "kicker": "THE REQUEST TAKES SHAPE",
       "sources": [
         {
-          "label": "what-happens-when",
-          "url": "https://github.com/alex/what-happens-when#url-is-parsed"
+          "label": "what-happens-when: input and URL parsing",
+          "url": "https://github.com/alex/what-happens-when#the-enter-key-bottoms-out"
         },
         {
-          "label": "MDN: TLS & HSTS",
-          "url": "https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"
+          "label": "what-happens-when: HSTS and sockets",
+          "url": "https://github.com/alex/what-happens-when#check-hsts-list"
+        },
+        {
+          "label": "MDN: HSTS",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security"
         }
       ],
       "hotspots": [
+        {
+          "id": "input",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Before the browser sees Enter",
+            "summary": "The keyboard and operating system deliver your keystroke to the browser window that currently has focus.",
+            "sections": [
+              {
+                "heading": "From switch to software",
+                "body": "A key press becomes an electrical signal, then an operating-system input event. The window manager routes that event to the focused browser window, which gives it to the address bar."
+              }
+            ],
+            "deeper": [],
+            "terms": {
+              "input event": "A structured message from the operating system describing a keyboard, pointer, or touch action."
+            }
+          },
+          "real": {
+            "title": "Keyboard interrupt to focused window",
+            "summary": "The journey starts below browser code: hardware reports the key press, the operating system decodes it, and the focused window receives an Enter event.",
+            "sections": [
+              {
+                "heading": "The handoff chain",
+                "body": "A keyboard controller reports a scan code. The OS input stack maps it through the active keyboard layout, creates an event, and the window manager delivers it to the focused browser process. Only then can the omnibox decide what Enter means."
+              },
+              {
+                "heading": "Why interviewers care",
+                "body": "This detail establishes the boundary between hardware, kernel input handling, windowing, and application logic. It is usually a “go deeper” detail, not the main networking answer."
+              }
+            ],
+            "deeper": [
+              "The exact interrupt and input path differs across USB, Bluetooth, operating systems, and browser architectures.",
+              "Simplification: modern operating systems batch and abstract much of the hardware path before the browser receives an event."
+            ],
+            "terms": {
+              "scan code": "A hardware-oriented identifier for a physical key action.",
+              "window manager": "The operating-system component that routes input and arranges application windows.",
+              "omnibox": "A browser address bar that accepts both URLs and search queries."
+            },
+            "interviewLine": "Before networking begins, the OS routes the Enter input event to the browser’s focused omnibox."
+          }
+        },
         {
           "id": "parser",
           "modes": [
@@ -26,19 +74,62 @@
             "real"
           ],
           "easy": {
-            "title": "Reading the address",
-            "summary": "The browser separates the name you typed into useful pieces. It recognizes where you want to go before sending anything.",
-            "sections": [],
-            "deeper": [],
-            "terms": {}
+            "title": "Understand the address",
+            "summary": "The address bar first decides whether “google.com” is a website address or a search, then separates the address into the pieces the network needs.",
+            "sections": [
+              {
+                "heading": "What the browser extracts",
+                "body": "A URL — a web address — can contain a scheme such as HTTPS, a hostname such as google.com, an optional port, a path, a query, and a fragment. The hostname is the part that later needs an IP address, the numeric network destination."
+              },
+              {
+                "heading": "Names beyond English",
+                "body": "IDNA is the rule set for international domain names. It converts non-ASCII names into an ASCII form called Punycode so the DNS system can carry them consistently."
+              }
+            ],
+            "deeper": [
+              "Modern browsers also use history, search settings, and speculative signals when deciding whether omnibox text is a URL or a search."
+            ],
+            "terms": {
+              "URL": "Uniform Resource Locator — the structured address of a web resource.",
+              "scheme": "The leading protocol choice, such as https.",
+              "hostname": "The human-readable network name, such as google.com.",
+              "IDNA": "Internationalized Domain Names in Applications — rules for using Unicode in domain names.",
+              "Punycode": "An ASCII encoding used for internationalized domain labels.",
+              "DNS": "Domain Name System — the system that turns names into IP addresses.",
+              "IP address": "A numeric address used to route traffic to a network interface."
+            }
           },
           "real": {
-            "title": "URL parsing",
-            "summary": "The address is parsed into a scheme, hostname, port, path, query, and fragment. Invalid host characters are converted with IDNA/Punycode before name resolution.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The browser first parses and normalizes the URL into the fields needed by the network stack."
+            "title": "Omnibox heuristic and URL normalization",
+            "summary": "The browser classifies omnibox input, parses a URL, normalizes the hostname, and produces the fields consumed by security and networking code.",
+            "sections": [
+              {
+                "heading": "URL or search?",
+                "body": "Browsers use syntax plus product-specific heuristics to distinguish a navigable URL from a search query. A recognized hostname proceeds as navigation; ambiguous text may be sent to the configured search engine. Modern browsers may also speculate or preconnect, so this walkthrough presents the logical path rather than an exact implementation schedule."
+              },
+              {
+                "heading": "Parsing and normalization",
+                "body": "The parser identifies scheme, username, password, hostname, port, path, query, and fragment. The hostname is case-normalized; non-ASCII labels are processed with IDNA and represented in DNS-compatible Punycode. The fragment stays client-side and is not sent in the HTTP request."
+              },
+              {
+                "heading": "Defaults that matter",
+                "body": "HTTPS normally selects port 443 when no port is written. The path defaults to “/”. These normalized fields drive HSTS checks, name resolution, socket creation, and the eventual HTTP request target."
+              }
+            ],
+            "deeper": [
+              "A browser may consult history and search-provider configuration before committing ambiguous omnibox text to navigation.",
+              "IDNA processing includes validation beyond simply calling a Punycode encoder.",
+              "The WHATWG URL parser is deliberately error-tolerant because real-world input is rarely pristine."
+            ],
+            "terms": {
+              "omnibox": "A combined address and search field.",
+              "URL": "Uniform Resource Locator — a structured web address.",
+              "IDNA": "The internationalized-domain processing rules applied by applications.",
+              "Punycode": "The ASCII-compatible encoding whose labels commonly begin with xn--.",
+              "fragment": "The # portion of a URL; it identifies a client-side location and is not sent in HTTP.",
+              "HSTS": "HTTP Strict Transport Security — a policy that forces HTTPS."
+            },
+            "interviewLine": "The browser classifies and normalizes the URL before any network request, including IDNA processing and default scheme/port behavior."
           }
         },
         {
@@ -48,19 +139,57 @@
             "real"
           ],
           "easy": {
-            "title": "A shortcut check",
-            "summary": "The browser checks whether it already knows the answer. A fresh saved copy can skip much of the trip.",
-            "sections": [],
-            "deeper": [],
-            "terms": {}
+            "title": "Check for a shortcut",
+            "summary": "Before crossing the network, the browser checks whether it already has a usable answer in memory or on disk.",
+            "sections": [
+              {
+                "heading": "Reuse or ask again",
+                "body": "A cache is saved data that avoids repeating work. A fresh cached response can be reused immediately; an older one may be revalidated, meaning the browser asks the server whether its copy is still current and can receive a tiny “not modified” answer."
+              },
+              {
+                "heading": "Several layers remember",
+                "body": "The active page may keep resources in memory, the browser can keep them on disk, and the operating system maintains separate DNS and connection state. Each layer has its own rules and lifetime."
+              }
+            ],
+            "deeper": [
+              "Private browsing, cache-control directives, and user actions can change or bypass these shortcuts."
+            ],
+            "terms": {
+              "cache": "Stored data kept so future work can be answered faster.",
+              "revalidated": "Checked with the server before reusing a stale cached copy.",
+              "DNS": "Domain Name System — the name-to-address lookup system."
+            }
           },
           "real": {
-            "title": "Cache hierarchy",
-            "summary": "The browser checks memory and disk caches, then relies on OS-level caches for DNS and network state. A valid cached response may be reused or revalidated.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "Caches can satisfy or shorten the request before a new network connection is opened."
+            "title": "Memory, disk, OS, reuse, revalidation",
+            "summary": "Caching is a hierarchy, and each successful layer can remove an entire class of downstream work.",
+            "sections": [
+              {
+                "heading": "Lookup order",
+                "body": "Browsers commonly consult in-memory resource state first, then an HTTP disk cache; the OS may separately cache DNS answers and maintain reusable sockets. Exact ordering and partitioning are browser-specific, especially with privacy protections."
+              },
+              {
+                "heading": "Freshness and validators",
+                "body": "Cache-Control freshness can permit direct reuse. Once stale, validators such as ETag with If-None-Match or Last-Modified with If-Modified-Since allow conditional revalidation; a 304 response reuses the stored body instead of transferring it again."
+              },
+              {
+                "heading": "Why layers matter",
+                "body": "A fresh HTML response skips the request. A cached DNS record skips recursive resolution. A warm connection skips some TCP or TLS setup. “The cache” is therefore not one box but several independent shortcuts."
+              }
+            ],
+            "deeper": [
+              "Modern browsers partition many caches by top-level site to reduce cross-site tracking.",
+              "Service workers can implement an application-controlled cache path in front of the network.",
+              "A force reload changes normal cache behavior and may still preserve lower-level connection state."
+            ],
+            "terms": {
+              "304": "HTTP Not Modified — reuse the cached body.",
+              "Cache-Control": "HTTP directives describing cacheability and freshness.",
+              "ETag": "An opaque identifier for a specific representation of a resource.",
+              "conditional revalidation": "A request that asks whether a stored response is still current.",
+              "DNS record": "A typed piece of DNS data, such as a hostname-to-address mapping."
+            },
+            "interviewLine": "Treat browser, HTTP, DNS, and connection caches as separate layers that can independently shorten navigation."
           }
         },
         {
@@ -70,19 +199,53 @@
             "real"
           ],
           "easy": {
-            "title": "Require a safe route",
-            "summary": "A safety list tells the browser to use the locked, private version of the site. It refuses to begin on an unprotected road.",
-            "sections": [],
-            "deeper": [],
-            "terms": {}
+            "title": "Choose the locked road first",
+            "summary": "HSTS — HTTP Strict Transport Security — tells the browser that this site must use encrypted HTTPS, even if someone types an insecure HTTP address.",
+            "sections": [
+              {
+                "heading": "Why the list exists",
+                "body": "Without a saved rule, a first HTTP request could be intercepted before the site redirects it to HTTPS. A preload list ships trusted HTTPS-only names inside the browser, so those names are upgraded before any insecure request leaves the device."
+              }
+            ],
+            "deeper": [
+              "A site can use HSTS without preloading, but the browser learns that policy only after a successful HTTPS response.",
+              "HSTS protects the transport choice; it does not make unsafe page code safe."
+            ],
+            "terms": {
+              "HSTS": "HTTP Strict Transport Security — a browser policy that forces HTTPS.",
+              "HTTPS": "HTTP carried inside encrypted and authenticated TLS.",
+              "preload list": "A browser-shipped list of domains that must use HTTPS from the first visit."
+            }
           },
           "real": {
-            "title": "HSTS upgrade",
-            "summary": "A cached HSTS policy or preload-list entry upgrades the request to HTTPS before any insecure HTTP request is sent. This blocks SSL-stripping on the first visit for preloaded domains.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "HSTS can force HTTPS locally, before the browser sends an HTTP request."
+            "title": "HSTS preload versus SSL stripping",
+            "summary": "HSTS moves the HTTP-to-HTTPS decision into the browser, removing an insecure first hop for known domains.",
+            "sections": [
+              {
+                "heading": "Policy mechanics",
+                "body": "After a valid HTTPS response sends Strict-Transport-Security, the browser records the host and max-age and upgrades future HTTP attempts locally. includeSubDomains extends the rule downward. Preloading embeds an HTTPS-only rule in browser releases before the first visit."
+              },
+              {
+                "heading": "Threat addressed",
+                "body": "In an SSL-stripping attack, an on-path attacker keeps the client on HTTP while using HTTPS upstream. A remembered or preloaded HSTS rule prevents that initial cleartext request, so the attacker cannot silently suppress the redirect."
+              },
+              {
+                "heading": "Important boundary",
+                "body": "The preload list is maintained through browser-vendor processes and updates with browser releases. Simplification: exact preload eligibility, inheritance, and removal timing vary by vendor."
+              }
+            ],
+            "deeper": [
+              "HSTS headers received over plain HTTP are ignored because an attacker could forge them.",
+              "HSTS policy applies by hostname; an IP address is not a substitute for hostname validation.",
+              "Removing a preload entry takes time because deployed browser versions must age out."
+            ],
+            "terms": {
+              "HSTS": "HTTP Strict Transport Security.",
+              "Strict-Transport-Security": "The HTTPS response header that installs or refreshes HSTS policy.",
+              "SSL stripping": "An on-path downgrade that keeps the victim on HTTP.",
+              "on-path attacker": "A party able to observe or alter traffic between endpoints."
+            },
+            "interviewLine": "A cached or preloaded HSTS rule upgrades navigation before HTTP is sent, closing the SSL-stripping window."
           }
         },
         {
@@ -91,19 +254,55 @@
             "real"
           ],
           "easy": {
-            "title": "Open a connection",
-            "summary": "The browser asks the operating system for a path to the destination.",
-            "sections": [],
+            "title": "Ask the operating system for a connection",
+            "summary": "Once the destination is known, the browser asks the operating system to open a socket — one endpoint of a network conversation.",
+            "sections": [
+              {
+                "heading": "What the OS takes over",
+                "body": "The browser supplies the address, port, and transport choice. The kernel then builds transport segments, calculates checksums for error detection, wraps them in IP packets and link-layer frames, and sends them through the selected network interface."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "socket": "One operating-system endpoint of a network connection.",
+              "kernel": "The privileged core of the operating system.",
+              "segment": "A transport-layer unit, such as a TCP segment.",
+              "checksum": "A compact value used to detect accidental corruption."
+            }
           },
           "real": {
-            "title": "Socket syscall",
-            "summary": "After resolution, the browser asks the OS for a socket using the destination address and service port—typically 443 for HTTPS. The kernel’s network stack handles transport and packetization.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The browser hands the resolved address and port to the OS through a socket API."
+            "title": "Socket syscall and kernel packet path",
+            "summary": "The socket API is the handoff from browser networking code to the kernel’s transport, network, and link layers.",
+            "sections": [
+              {
+                "heading": "The request",
+                "body": "For classic HTTPS over TCP, the browser requests an AF_INET or AF_INET6, SOCK_STREAM socket, then connects it to the resolved address and destination port 443. The kernel selects a local address and ephemeral source port from its configured range."
+              },
+              {
+                "heading": "Encapsulation",
+                "body": "The kernel segments the byte stream, writes TCP source/destination ports and sequence state, calculates checksums, adds source/destination IP addresses, and finally adds link-layer addresses for the next hop. It may use ARP or Neighbor Discovery to learn the gateway’s link address."
+              },
+              {
+                "heading": "Responsibility boundary",
+                "body": "The browser chooses application semantics and feeds bytes; the kernel handles retransmission, ordering, congestion control, routing-table selection, and network-interface delivery. HTTP/3 is a notable variation: QUIC runs over UDP and much of its transport logic lives in user space."
+              }
+            ],
+            "deeper": [
+              "The kernel may offload checksum and segmentation work to the network card.",
+              "NAT devices can rewrite the source address and port after the packet leaves the host.",
+              "The exact API may be asynchronous and sandboxed behind a browser network process rather than called directly by the tab."
+            ],
+            "terms": {
+              "socket": "An endpoint identified by protocol plus local/remote addresses and ports.",
+              "syscall": "A controlled request from an application into the operating-system kernel.",
+              "AF_INET": "The socket address family for IPv4.",
+              "AF_INET6": "The socket address family for IPv6.",
+              "SOCK_STREAM": "A reliable byte-stream socket, normally TCP.",
+              "ephemeral source port": "A temporary local port selected for an outbound connection.",
+              "ARP": "Address Resolution Protocol — maps an IPv4 address to a local-link MAC address.",
+              "QUIC": "A secure multiplexed transport carried over UDP."
+            },
+            "interviewLine": "After resolution, the browser opens a socket and the kernel owns segmentation, checksums, routing, retransmission, and interface delivery."
           }
         }
       ]
@@ -117,8 +316,12 @@
       "kicker": "A NAME BECOMES A NUMBER",
       "sources": [
         {
-          "label": "what-happens-when: DNS",
+          "label": "what-happens-when: DNS and ARP",
           "url": "https://github.com/alex/what-happens-when#dns-lookup"
+        },
+        {
+          "label": "MDN: DNS",
+          "url": "https://developer.mozilla.org/en-US/docs/Glossary/DNS"
         }
       ],
       "hotspots": [
@@ -129,19 +332,64 @@
             "real"
           ],
           "easy": {
-            "title": "Ask the resolver",
-            "summary": "DNS is the internet’s phonebook. Your resolver takes the name google.com and starts looking for its number.",
-            "sections": [],
-            "deeper": [],
-            "terms": {}
+            "title": "Ask a resolver",
+            "summary": "DNS — the Domain Name System — turns a name such as google.com into an IP address that networks can route.",
+            "sections": [
+              {
+                "heading": "Who does the searching",
+                "body": "Your device has a small DNS client called a stub resolver. It asks a recursive resolver, often provided by the network or a privacy service, to find the complete answer. The recursive resolver checks its cache first and performs the longer hierarchy walk only when needed."
+              },
+              {
+                "heading": "Cached answers expire",
+                "body": "A DNS answer carries a TTL — time to live — that says how long it may be cached. Short TTLs adapt quickly; long TTLs reduce lookup traffic. There is no universal value: records can range from seconds to days."
+              }
+            ],
+            "deeper": [
+              "Encrypted DNS options such as DoH and DoT protect the device-to-resolver query from local observers."
+            ],
+            "terms": {
+              "DNS": "Domain Name System — the distributed name-to-data directory.",
+              "IP address": "A numeric network destination.",
+              "stub resolver": "The small DNS client on the device.",
+              "recursive resolver": "A service that obtains the final DNS answer for a client.",
+              "cache": "Stored answers that can be reused.",
+              "TTL": "Time to live — the cache lifetime attached to a DNS record.",
+              "DoH": "DNS over HTTPS.",
+              "DoT": "DNS over TLS."
+            }
           },
           "real": {
-            "title": "Recursive resolver",
-            "summary": "The stub resolver asks its configured recursive resolver for google.com. The resolver answers from cache or performs iterative queries on the client’s behalf.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The client asks a recursive resolver, which either serves a cached record or walks the DNS hierarchy."
+            "title": "Stub, recursive, and iterative roles",
+            "summary": "The stub asks one recursive resolver for a final answer; that resolver either serves cache or performs iterative referrals through the DNS hierarchy.",
+            "sections": [
+              {
+                "heading": "Client side",
+                "body": "The stub resolver exposes a simple name lookup to the browser. Depending on platform and browser settings, it may consult browser and OS caches, the hosts file, then a configured recursive resolver over classic DNS, DoH, or DoT."
+              },
+              {
+                "heading": "Resolver side",
+                "body": "A recursive resolver promises the client a final answer or error. On a cache miss it sends iterative queries: each authority replies with the best referral it has, rather than recursively doing the rest of the work."
+              },
+              {
+                "heading": "TTL behavior",
+                "body": "Each record set has an authoritative TTL. Caches decrement it while storing the answer; values commonly range from tens of seconds to hours or longer. Low TTLs allow traffic steering to change quickly but increase query load."
+              }
+            ],
+            "deeper": [
+              "Negative answers such as “name does not exist” can also be cached according to DNS rules.",
+              "Resolvers may prefetch popular records before TTL expiry.",
+              "Simplification: browsers can run their own DNS cache and encrypted resolver path, so the OS is not always the only stub."
+            ],
+            "terms": {
+              "stub resolver": "The device-side DNS client.",
+              "recursive resolver": "A DNS server that returns a complete answer to the client.",
+              "iterative": "A query style where each server returns an answer or a referral to another authority.",
+              "authority": "A nameserver responsible for part of the DNS tree.",
+              "TTL": "The cache lifetime supplied with DNS data.",
+              "DoH": "DNS carried inside HTTPS.",
+              "DoT": "DNS carried inside a dedicated TLS connection."
+            },
+            "interviewLine": "The stub asks recursively; the resolver walks iteratively only on cache miss, caching each answer for its TTL."
           }
         },
         {
@@ -152,40 +400,94 @@
           ],
           "easy": {
             "title": "Start at the root",
-            "summary": "The first guide does not know Google’s address, but it knows where .com lives. It points the question onward.",
-            "sections": [],
+            "summary": "A root nameserver does not return Google’s address; it points the resolver toward the servers responsible for “.com.”",
+            "sections": [
+              {
+                "heading": "A directory of directories",
+                "body": "DNS is arranged as a hierarchy. The root is the top directory, and a referral is its pointer to the next directory. This keeps any one server from needing every hostname on the internet."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "root nameserver": "A top-level DNS server that knows where top-level domains are served.",
+              "referral": "A DNS response that points to another set of nameservers.",
+              "hierarchy": "A tree-shaped organization from broad authority to specific authority."
+            }
           },
           "real": {
-            "title": "Root nameserver referral",
-            "summary": "A root nameserver returns a referral to the .com TLD nameservers. This is an iterative referral, not the final A or AAAA record.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The root server delegates the lookup to the appropriate top-level-domain nameservers."
+            "title": "Root referral",
+            "summary": "The root answers an iterative query with a delegation to the .com top-level-domain nameservers, not with google.com’s final address.",
+            "sections": [
+              {
+                "heading": "What returns",
+                "body": "The response contains NS records naming the .com authorities and may include glue address records needed to contact them. The recursive resolver validates the response structure, chooses a reachable authority, and continues."
+              },
+              {
+                "heading": "Why roots scale",
+                "body": "Root infrastructure serves compact delegation data and is replicated globally, commonly using anycast. Caching root and TLD referrals means most user lookups do not start from the root every time."
+              }
+            ],
+            "deeper": [
+              "The DNS root is a coordinated logical service implemented by many server instances worldwide.",
+              "DNSSEC-capable resolvers can validate signed delegation chains in addition to ordinary referral processing."
+            ],
+            "terms": {
+              "NS": "Nameserver record — identifies an authoritative DNS server.",
+              "glue": "An address included with a delegation so the referred nameserver can be reached.",
+              "delegation": "Transfer of authority for a DNS subtree.",
+              "anycast": "Routing the same address from multiple sites.",
+              "DNSSEC": "DNS Security Extensions — signatures for authenticating DNS data."
+            },
+            "interviewLine": "A root server returns the .com delegation; caching and anycast keep this globally replicated step scalable."
           }
         },
         {
           "id": "tld",
           "modes": [
-            "easy",
             "real"
           ],
           "easy": {
-            "title": "Find .com",
-            "summary": "The .com guide knows which directory holds Google’s entry. One more handoff gets us close.",
-            "sections": [],
+            "title": "Find the .com directory",
+            "summary": "The .com nameserver knows which authoritative servers hold Google’s records and sends the resolver there.",
+            "sections": [
+              {
+                "heading": "One step narrower",
+                "body": "TLD means top-level domain, such as .com. Its response is another referral, now from the broad .com directory to the nameservers responsible for google.com."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "TLD": "Top-level domain — the first label below the DNS root.",
+              "authoritative": "Officially responsible for a DNS zone."
+            }
           },
           "real": {
-            "title": "TLD referral",
-            "summary": "A .com TLD nameserver returns the authoritative nameserver set for google.com, typically with glue when needed to avoid another circular lookup.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The TLD server points the resolver to the domain’s authoritative nameservers."
+            "title": "TLD delegation and glue",
+            "summary": "The .com authority narrows the search from a top-level domain to google.com’s authoritative nameserver set.",
+            "sections": [
+              {
+                "heading": "Referral contents",
+                "body": "The TLD response supplies NS records for the child zone and glue A or AAAA records when the nameserver’s own name would otherwise require a circular lookup. The resolver can try another listed server if one is slow or unreachable."
+              },
+              {
+                "heading": "Iterative, not recursive",
+                "body": "The TLD server does not chase google.com on the resolver’s behalf. It answers from delegation data for .com. That division of responsibility is what lets the hierarchy scale administratively and operationally."
+              }
+            ],
+            "deeper": [
+              "Registry operators maintain TLD delegation data submitted through registrars.",
+              "Glue is helpful address data, but the child zone remains authoritative for its own nameserver addresses."
+            ],
+            "terms": {
+              "TLD": "Top-level domain.",
+              "NS": "A DNS record naming a nameserver.",
+              "A": "A DNS record containing an IPv4 address.",
+              "AAAA": "A DNS record containing an IPv6 address.",
+              "glue": "Address data shipped with a delegation.",
+              "recursive": "A request for the server to obtain the final answer.",
+              "iterative": "A request answered with the best current answer or referral."
+            },
+            "interviewLine": "The TLD returns the child zone’s NS delegation, with glue when required, and the resolver continues iteratively."
           }
         },
         {
@@ -195,19 +497,52 @@
             "real"
           ],
           "easy": {
-            "title": "The final answer",
-            "summary": "Google’s own directory returns an IP address. The glowing query now carries the number back to your browser.",
-            "sections": [],
+            "title": "Receive the official answer",
+            "summary": "The authoritative nameserver — the official source for this domain — returns an address record and its cache lifetime.",
+            "sections": [
+              {
+                "heading": "Back to the browser",
+                "body": "The recursive resolver stores the answer for its TTL and returns it to the device. Large services can return different healthy addresses by location and can advertise those addresses from many network sites; the exact Google strategy changes over time."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "authoritative": "Officially responsible for a DNS zone.",
+              "address record": "A DNS A or AAAA record containing an IPv4 or IPv6 address.",
+              "TTL": "Time to live — how long a cached answer remains reusable."
+            }
           },
           "real": {
-            "title": "Authoritative answer",
-            "summary": "The authoritative server returns an A or AAAA answer with a TTL. The resolver caches the result and sends it to the client; the displayed 142.250.x.x is illustrative.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The authoritative answer supplies the address and TTL that downstream caches may reuse."
+            "title": "Authoritative answer and steering",
+            "summary": "The authoritative service returns A and/or AAAA data, aliases where applicable, and TTLs that govern downstream caching.",
+            "sections": [
+              {
+                "heading": "The final DNS data",
+                "body": "An answer may include CNAME aliases followed by address records. The resolver caches each record set for its TTL, returns the result to the stub, and the client selects an address according to IPv4/IPv6 reachability and connection policy."
+              },
+              {
+                "heading": "Large-service behavior",
+                "body": "Services such as google.com use globally distributed authoritative DNS and traffic steering. Shorter TTLs can make address choices adapt sooner, while anycast can route a returned service address toward a suitable edge. Simplification: no single fixed TTL or IP represents every Google user."
+              },
+              {
+                "heading": "What the client gets",
+                "body": "The displayed 142.250.x.x address is illustrative. Real answers vary by geography, resolver location, address family, service health, and time."
+              }
+            ],
+            "deeper": [
+              "A resolver’s location, not always the end user’s exact location, can influence DNS-based steering.",
+              "Happy Eyeballs-style connection logic may race IPv6 and IPv4 candidates after resolution.",
+              "DNSSEC authenticates signed records but does not encrypt the query itself."
+            ],
+            "terms": {
+              "CNAME": "A DNS alias from one name to another.",
+              "A": "An IPv4 address record.",
+              "AAAA": "An IPv6 address record.",
+              "TTL": "The authoritative cache lifetime.",
+              "anycast": "Advertising the same network prefix from multiple sites.",
+              "traffic steering": "Selecting an answer or route intended to reach a suitable service location."
+            },
+            "interviewLine": "The authoritative answer supplies address candidates and TTLs; large services combine DNS steering with distributed routing."
           }
         },
         {
@@ -216,19 +551,56 @@
             "real"
           ],
           "easy": {
-            "title": "Local shortcuts",
-            "summary": "Your computer checks nearby shortcuts before asking the wider internet.",
-            "sections": [],
+            "title": "Check nearby answers and reach the resolver",
+            "summary": "Before the hierarchy, the device checks local DNS caches and its hosts file, then sends the query to a resolver.",
+            "sections": [
+              {
+                "heading": "Leaving the local network",
+                "body": "Classic DNS usually uses UDP port 53. If the resolver is off the local subnet, ARP finds the router’s MAC address so the frame can reach the default gateway."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "hosts file": "A local manual mapping from names to addresses.",
+              "UDP": "A message-oriented transport without TCP connection setup.",
+              "ARP": "The IPv4 local-link protocol for finding a MAC address.",
+              "MAC address": "A link-layer interface identifier.",
+              "default gateway": "The router used to reach other networks."
+            }
           },
           "real": {
-            "title": "Local caches, hosts & gateway",
-            "summary": "Before walking the hierarchy, browser and OS DNS caches plus the hosts file may answer. Otherwise the client sends DNS—usually UDP port 53—to its resolver and may use ARP to learn the local resolver or default gateway’s MAC address.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "Resolution starts with local caches and hosts; reaching an off-subnet resolver requires the link-layer path to the gateway."
+            "title": "Caches, hosts, UDP 53, EDNS0, ARP, DoH",
+            "summary": "The “DNS lookup” contains a local policy path and a network-delivery path before any root referral occurs.",
+            "sections": [
+              {
+                "heading": "Local decision path",
+                "body": "The browser and OS can each hold DNS caches. The hosts file can override normal lookup for exact names. If neither answers, the stub sends a query to its configured resolver; VPN, enterprise, and browser secure-DNS policies can select different resolvers."
+              },
+              {
+                "heading": "Transport behavior",
+                "body": "Classic DNS usually sends a compact query over UDP port 53. EDNS0 advertises larger UDP capacity; truncation or operational policy can trigger TCP fallback. DoH carries DNS inside HTTPS, while DoT uses TLS on a dedicated port."
+              },
+              {
+                "heading": "Reaching the next hop",
+                "body": "For a resolver on the local subnet, ARP resolves that resolver’s IPv4 address to a MAC address. For an off-subnet resolver, ARP resolves the default gateway instead. IPv6 uses Neighbor Discovery rather than ARP."
+              }
+            ],
+            "deeper": [
+              "DNS messages include an identifier and question fields; UDP responses are matched to the outstanding query.",
+              "EDNS0 expands DNS capabilities without changing the basic header format.",
+              "Encrypted DNS hides query contents from the local path but the chosen resolver still processes them."
+            ],
+            "terms": {
+              "UDP": "User Datagram Protocol.",
+              "EDNS0": "Extension Mechanisms for DNS — advertises larger messages and extra capabilities.",
+              "TCP": "Transmission Control Protocol.",
+              "DoH": "DNS over HTTPS.",
+              "DoT": "DNS over TLS.",
+              "ARP": "Address Resolution Protocol.",
+              "Neighbor Discovery": "The IPv6 mechanism for discovering neighbors and routers.",
+              "MAC address": "A local-link hardware address."
+            },
+            "interviewLine": "Resolution checks local caches and hosts first, then reaches a resolver over UDP/TCP or encrypted DNS using the gateway’s link-layer path."
           }
         }
       ]
@@ -237,13 +609,21 @@
       "id": "tcp",
       "title": {
         "easy": "Building a connection",
-        "real": "TCP three-way handshake"
+        "real": "TCP connection mechanics"
       },
       "kicker": "THREE MESSAGES BUILD A BRIDGE",
       "sources": [
         {
-          "label": "what-happens-when: TCP",
-          "url": "https://github.com/alex/what-happens-when#tcp"
+          "label": "what-happens-when: socket and TCP",
+          "url": "https://github.com/alex/what-happens-when#opening-of-a-socket"
+        },
+        {
+          "label": "what-happens-when: congestion control",
+          "url": "https://github.com/alex/what-happens-when#if-a-packet-is-dropped"
+        },
+        {
+          "label": "MDN: TCP",
+          "url": "https://developer.mozilla.org/en-US/docs/Glossary/TCP"
         }
       ],
       "hotspots": [
@@ -254,19 +634,54 @@
             "real"
           ],
           "easy": {
-            "title": "Can we talk?",
-            "summary": "Your computer sends a hello across the gap. It asks the server to open a reliable connection.",
-            "sections": [],
+            "title": "Propose a connection",
+            "summary": "The client sends SYN — a TCP flag meaning “start and synchronize” — from a temporary local port to the server’s HTTPS port 443.",
+            "sections": [
+              {
+                "heading": "Start the counters",
+                "body": "TCP is a reliable ordered byte stream. The client chooses a randomized Initial Sequence Number, the starting counter used to number bytes, and places it in the SYN segment."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "TCP": "Transmission Control Protocol — a reliable ordered byte stream.",
+              "SYN": "Synchronize flag — starts a TCP connection and announces sequence state.",
+              "port": "A number that identifies a service endpoint on a host.",
+              "Initial Sequence Number": "The starting value for one direction’s TCP byte counter.",
+              "segment": "A TCP protocol message."
+            }
           },
           "real": {
-            "title": "SYN",
-            "summary": "The client sends a TCP segment with SYN set and an initial sequence number to the server’s destination port.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "SYN proposes a connection and establishes the client’s initial sequence space."
+            "title": "SYN, ports, and ISN selection",
+            "summary": "The client allocates a socket tuple, chooses an ephemeral port and randomized ISN, then sends SYN to destination port 443.",
+            "sections": [
+              {
+                "heading": "Flow identity",
+                "body": "A TCP connection is identified by protocol plus source address, source port, destination address, and destination port. The kernel chooses an ephemeral source port from its configured range; NAT may rewrite that address and port at egress."
+              },
+              {
+                "heading": "Sequence security",
+                "body": "The client’s ISN begins its independent byte-number space. Modern ISN generation is deliberately hard to predict, which makes blind off-path segment injection substantially harder than with simple counters."
+              },
+              {
+                "heading": "The first segment",
+                "body": "SYN consumes one sequence number even before application bytes are sent. Options can advertise capabilities such as MSS, window scaling, selective acknowledgments, and timestamps."
+              }
+            ],
+            "deeper": [
+              "An outbound NAT mapping lets return traffic be associated with the internal socket.",
+              "SYN retransmission handles loss before the connection is established.",
+              "ISN unpredictability is one defense; authenticated encryption at TLS protects application data later."
+            ],
+            "terms": {
+              "SYN": "The TCP synchronize flag.",
+              "ISN": "Initial Sequence Number.",
+              "ephemeral port": "A temporary client-side source port.",
+              "NAT": "Network Address Translation — rewrites addresses and often ports at a boundary.",
+              "MSS": "Maximum Segment Size — the largest TCP payload advertised for one segment.",
+              "off-path injection": "Forging traffic without being able to observe the real flow."
+            },
+            "interviewLine": "The client sends SYN from an ephemeral port with a randomized ISN, defining one half of the TCP sequence space."
           }
         },
         {
@@ -276,19 +691,46 @@
             "real"
           ],
           "easy": {
-            "title": "I hear you",
-            "summary": "The server answers that it is ready and heard the hello. Two pieces of the bridge lock together.",
-            "sections": [],
+            "title": "Hear the server answer",
+            "summary": "The server replies with SYN-ACK: its own starting counter plus proof that it received the client’s SYN.",
+            "sections": [
+              {
+                "heading": "Two directions, two counters",
+                "body": "ACK means acknowledgment. The server acknowledges the client’s starting number and introduces a separate Initial Sequence Number for bytes flowing back to the client."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "SYN-ACK": "A TCP segment with both synchronize and acknowledgment flags.",
+              "ACK": "Acknowledgment — confirms the next byte number expected.",
+              "Initial Sequence Number": "The random starting counter for one direction."
+            }
           },
           "real": {
-            "title": "SYN-ACK",
-            "summary": "The server acknowledges the client sequence number and sends its own SYN with a server initial sequence number.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "SYN-ACK proves the server received the client’s SYN and contributes its own sequence number."
+            "title": "SYN-ACK and the need for three messages",
+            "summary": "SYN-ACK acknowledges the client’s sequence space and proposes the server’s independent sequence space.",
+            "sections": [
+              {
+                "heading": "Why two messages are insufficient",
+                "body": "After SYN-ACK, the client knows the server received its SYN and can send back. The server still does not know whether its own SYN reached the client. A third ACK proves bidirectional reachability and confirms both independently selected sequence spaces."
+              },
+              {
+                "heading": "Server state",
+                "body": "On receiving SYN, the server records half-open connection state in a SYN queue and replies with its ISN. Under pressure, implementations may use SYN cookies to encode enough state into the SYN-ACK rather than retaining every half-open entry."
+              }
+            ],
+            "deeper": [
+              "SYN cookies trade some option flexibility for resilience when the SYN queue is under attack.",
+              "The handshake validates reachability; it does not authenticate who controls either endpoint.",
+              "TCP Fast Open can carry data earlier but changes replay and deployment considerations."
+            ],
+            "terms": {
+              "SYN-ACK": "The server’s combined synchronize and acknowledge segment.",
+              "sequence space": "The byte-number range maintained independently for one direction.",
+              "SYN queue": "Server state for connections that have not completed the handshake.",
+              "SYN cookie": "A technique that encodes connection state into the server’s sequence number."
+            },
+            "interviewLine": "Three messages are required because each direction has its own sequence space and the server needs proof its SYN reached the client."
           }
         },
         {
@@ -298,19 +740,47 @@
             "real"
           ],
           "easy": {
-            "title": "Connection ready",
-            "summary": "Your computer confirms the reply. The final bridge piece clicks in and data can cross.",
-            "sections": [],
+            "title": "Lock the bridge",
+            "summary": "The client sends the final ACK, confirming the server’s starting number; both sides can now exchange ordered bytes.",
+            "sections": [
+              {
+                "heading": "Ready for application data",
+                "body": "The server moves the connection from half-open state to an accept queue, where the application can receive it. ACK numbers continue to report the next byte expected as data flows."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "ACK": "A TCP acknowledgment.",
+              "accept queue": "Completed connections waiting for the server application.",
+              "half-open": "A connection whose handshake has not completed."
+            }
           },
           "real": {
-            "title": "ACK",
-            "summary": "The client acknowledges the server’s sequence number. Both sides now agree on connection state and can exchange ordered bytes.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The final ACK confirms both directions and completes the TCP connection."
+            "title": "Final ACK and accept queue",
+            "summary": "The third segment confirms the server’s ISN and turns the half-open handshake into an established byte stream.",
+            "sections": [
+              {
+                "heading": "State transition",
+                "body": "The client acknowledges server ISN + 1. The server can move the socket from the SYN queue to the accept queue, subject to backlog limits, and wake the accepting process. The ACK may sometimes carry the first application bytes."
+              },
+              {
+                "heading": "Reliability from here",
+                "body": "Sequence numbers count bytes, acknowledgments state the next byte expected, retransmission repairs detected loss, and receive windows provide flow control so a fast sender does not overwhelm a slow receiver."
+              }
+            ],
+            "deeper": [
+              "The application may not call accept immediately even though TCP has completed the network handshake.",
+              "A full accept queue can cause drops or implementation-specific behavior.",
+              "Flow control protects the receiver; congestion control protects the network path."
+            ],
+            "terms": {
+              "ISN": "Initial Sequence Number.",
+              "SYN queue": "Half-open handshakes awaiting the final ACK.",
+              "accept queue": "Completed connections awaiting application acceptance.",
+              "receive window": "The amount of additional data the receiver currently permits.",
+              "flow control": "Receiver-driven limits on outstanding data."
+            },
+            "interviewLine": "The final ACK proves the client received the server’s ISN and promotes the connection into the server’s accept queue."
           }
         },
         {
@@ -319,19 +789,105 @@
             "real"
           ],
           "easy": {
-            "title": "Track the connection",
-            "summary": "Both ends remember which conversation each message belongs to.",
-            "sections": [],
+            "title": "Track one conversation",
+            "summary": "Addresses, ports, and sequence numbers let both operating systems keep this connection separate from every other conversation.",
+            "sections": [
+              {
+                "heading": "Fit data to the path",
+                "body": "MSS limits the TCP payload in one segment. It is chosen to fit beneath the path’s MTU, the largest packet a link can carry without fragmentation."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "MSS": "Maximum Segment Size — maximum TCP payload per segment.",
+              "MTU": "Maximum Transmission Unit — maximum packet size for a link.",
+              "NAT": "Network Address Translation."
+            }
           },
           "real": {
-            "title": "Ports, sockets & sequence state",
-            "summary": "A TCP flow is identified by source/destination addresses and ports. The handshake proves both directions work and synchronizes independently chosen sequence numbers—why two messages are not enough.",
-            "sections": [],
+            "title": "Socket tuple, NAT, MSS, and MTU",
+            "summary": "Connection state binds the five-tuple to sequence, acknowledgment, timer, window, and congestion information.",
+            "sections": [
+              {
+                "heading": "Identity through NAT",
+                "body": "The host tracks local/remote addresses and ports. A home NAT commonly rewrites the private source address and ephemeral port to a public mapping, then reverses that mapping for replies. This does not change the server’s destination port 443."
+              },
+              {
+                "heading": "Packet sizing",
+                "body": "The interface MTU limits an IP packet on a link. TCP advertises MSS so peers avoid creating segments whose IP packets exceed that limit. Common Ethernet values are 1500-byte MTU and roughly 1460-byte IPv4 TCP MSS without extra options, but tunnels and IPv6 can change the arithmetic."
+              },
+              {
+                "heading": "Operational state",
+                "body": "Each endpoint keeps retransmission timers, send and receive windows, negotiated options, and sequence counters. The socket abstraction hides most of this machinery from HTTP."
+              }
+            ],
+            "deeper": [
+              "Path MTU Discovery attempts to learn the smallest usable MTU across the route.",
+              "Segmentation offload can let the kernel hand larger buffers to the network card while preserving wire-sized packets.",
+              "NAT mappings time out, so idle connections need reuse and keepalive policies."
+            ],
+            "terms": {
+              "five-tuple": "Protocol, source address/port, and destination address/port.",
+              "NAT": "Network Address Translation.",
+              "MTU": "Maximum Transmission Unit.",
+              "MSS": "Maximum Segment Size.",
+              "Path MTU Discovery": "A process for learning the largest packet that traverses a path without fragmentation."
+            },
+            "interviewLine": "The socket’s tuple identifies the flow, NAT may rewrite its public edge, and MSS keeps TCP payloads within the path MTU."
+          }
+        },
+        {
+          "id": "congestion",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Begin carefully",
+            "summary": "TCP does not immediately flood a new path; it starts with a limited congestion window and grows as acknowledgments prove capacity.",
+            "sections": [
+              {
+                "heading": "React to the network",
+                "body": "Slow start increases the amount of unacknowledged data quickly at first. Loss or congestion signals reduce the sending rate so many connections can share the path."
+              }
+            ],
             "deeper": [],
-            "terms": {},
-            "interviewLine": "Three messages validate bidirectional reachability while synchronizing both sequence spaces."
+            "terms": {
+              "congestion window": "The sender’s limit on unacknowledged data based on network conditions.",
+              "Slow start": "TCP’s rapid early growth phase.",
+              "loss": "A packet that does not arrive and must be recovered."
+            }
+          },
+          "real": {
+            "title": "Slow start and congestion window",
+            "summary": "After the handshake, TCP discovers path capacity rather than assuming it, using acknowledgments and loss as feedback.",
+            "sections": [
+              {
+                "heading": "Initial growth",
+                "body": "The sender begins with an initial congestion window measured in MSS-sized segments. During slow start, acknowledgments grow the window rapidly until a threshold, a congestion event, or another algorithmic limit is reached."
+              },
+              {
+                "heading": "After congestion",
+                "body": "Congestion-control algorithms such as CUBIC reduce or reshape the window after loss and then probe upward again. The receive window and congestion window both constrain outstanding data; the smaller effective limit wins."
+              },
+              {
+                "heading": "Why page load cares",
+                "body": "A new cold connection cannot immediately use all available bandwidth. Reusing warm connections and multiplexing requests avoids repeating this ramp, which is one reason modern HTTP favors persistent connections."
+              }
+            ],
+            "deeper": [
+              "Modern stacks can use ECN marks as a congestion signal without waiting for loss.",
+              "QUIC implements congestion control in user space but follows similar feedback principles.",
+              "The exact initial window and recovery behavior vary by implementation and negotiated features."
+            ],
+            "terms": {
+              "congestion window": "Sender-side limit derived from network feedback.",
+              "MSS": "Maximum Segment Size.",
+              "slow start": "The early exponential-growth phase of a congestion controller.",
+              "CUBIC": "A common TCP congestion-control algorithm.",
+              "receive window": "Receiver-advertised flow-control capacity.",
+              "ECN": "Explicit Congestion Notification."
+            },
+            "interviewLine": "TCP starts with a bounded congestion window, grows through slow start, and backs off when the path signals congestion."
           }
         }
       ]
@@ -340,16 +896,16 @@
       "id": "tls",
       "title": {
         "easy": "Making it private",
-        "real": "TLS handshake"
+        "real": "TLS 1.3 security"
       },
       "kicker": "TRUST, THEN ENCRYPT",
       "sources": [
         {
-          "label": "what-happens-when: TLS",
+          "label": "what-happens-when: TLS handshake",
           "url": "https://github.com/alex/what-happens-when#tls-handshake"
         },
         {
-          "label": "MDN: TLS",
+          "label": "MDN: Transport Layer Security",
           "url": "https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security"
         }
       ],
@@ -361,19 +917,53 @@
             "real"
           ],
           "easy": {
-            "title": "Check the identity",
-            "summary": "The site shows a hard-to-forge identity card. Your browser checks that it belongs to Google and was signed by someone it trusts.",
-            "sections": [],
+            "title": "Check the site’s identity",
+            "summary": "A certificate is a digitally signed identity document that binds google.com to a public key.",
+            "sections": [
+              {
+                "heading": "Follow the chain of trust",
+                "body": "The server sends its certificate plus intermediate certificates. The browser follows their signatures to a root certificate already trusted in its local root store, then checks the hostname, validity dates, and available revocation information."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "certificate": "A signed document binding an identity to a public key.",
+              "public key": "The shareable half of an asymmetric key pair.",
+              "root store": "The browser or operating system’s collection of trusted certificate-authority roots.",
+              "revocation": "A signal that a certificate should no longer be trusted."
+            }
           },
           "real": {
-            "title": "Certificate chain",
-            "summary": "The server certificate binds a public key to the hostname. The browser verifies signatures up to a trusted root, hostname coverage, validity, and revocation signals.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "Certificate validation authenticates the server before application data is trusted."
+            "title": "Certificate chain and local trust",
+            "summary": "The browser authenticates the server by validating a leaf-to-root certificate path anchored in its local trust store.",
+            "sections": [
+              {
+                "heading": "Chain construction",
+                "body": "The leaf certificate names the site and contains its public key. Intermediate certificate authorities sign downward; the browser builds a path to a trusted root already present in its root store. The root itself is trusted by local policy, not because the server sends it."
+              },
+              {
+                "heading": "Checks beyond signatures",
+                "body": "Validation checks hostname coverage, validity time, key usage, algorithm policy, and chain signatures. Revocation information may arrive through OCSP stapling, where the server attaches a fresh CA-signed status response, though browser behavior and failure policy vary."
+              },
+              {
+                "heading": "Failure behavior",
+                "body": "A broken signature, wrong hostname, expired certificate, or untrusted root stops normal HTTPS navigation behind an interstitial. Simplification: certificate-path building and revocation policy differ by browser and platform."
+              }
+            ],
+            "deeper": [
+              "Certificate Transparency logs provide public evidence of certificate issuance and are checked by modern browsers.",
+              "The server usually omits the root certificate because the client must already trust that anchor.",
+              "SNI lets the server select the correct certificate before encrypted HTTP begins."
+            ],
+            "terms": {
+              "leaf": "The end-entity certificate for the requested hostname.",
+              "intermediate": "A certificate authority between the leaf and trusted root.",
+              "root store": "Locally trusted CA roots.",
+              "OCSP": "Online Certificate Status Protocol.",
+              "OCSP stapling": "A server-provided signed revocation-status response.",
+              "SNI": "Server Name Indication — the requested hostname in ClientHello."
+            },
+            "interviewLine": "Validate the hostname-bearing leaf through intermediates to a locally trusted root, including validity and revocation signals."
           }
         },
         {
@@ -383,19 +973,52 @@
             "real"
           ],
           "easy": {
-            "title": "Create secret keys",
-            "summary": "Both sides mix private ingredients into matching secret keys. The secret itself never travels across the network.",
-            "sections": [],
+            "title": "Derive matching secret keys",
+            "summary": "Client and server exchange public key material, then independently calculate the same short-lived traffic keys without sending those keys across the network.",
+            "sections": [
+              {
+                "heading": "Why two kinds of cryptography",
+                "body": "Asymmetric cryptography establishes identity and a shared secret. Fast symmetric cryptography then protects the many HTTP bytes that follow. Ephemeral key exchange gives forward secrecy, so stealing the long-term certificate key later does not decrypt old captured sessions."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "traffic keys": "Short-lived symmetric keys used to protect TLS records.",
+              "Asymmetric cryptography": "Cryptography using a public/private key pair.",
+              "symmetric cryptography": "Cryptography using the same secret key on both sides.",
+              "forward secrecy": "Protection of past sessions even if a long-term key is later compromised."
+            }
           },
           "real": {
-            "title": "Ephemeral key agreement",
-            "summary": "Modern TLS negotiates parameters and uses ephemeral key agreement to derive symmetric traffic keys. TLS 1.3 normally completes a full handshake in one round trip.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "TLS derives fast symmetric session keys after authenticating the server."
+            "title": "ECDHE, HKDF, and forward secrecy",
+            "summary": "TLS 1.3 combines ephemeral key agreement with the authenticated transcript, then uses HKDF to derive separate secrets for each direction and phase.",
+            "sections": [
+              {
+                "heading": "Shared secret",
+                "body": "Client and server contribute ephemeral ECDHE key shares. Each side combines its private value with the peer’s public value to compute the same shared secret. The certificate authenticates the server’s handshake signature; it does not directly encrypt the HTTP body."
+              },
+              {
+                "heading": "Key schedule",
+                "body": "HKDF mixes the shared secret with hashes of the handshake transcript to derive handshake traffic secrets, application traffic secrets, finished keys, and IV material. Separate client/server keys limit accidental cross-use."
+              },
+              {
+                "heading": "Security property",
+                "body": "Because the ephemeral private values are discarded, later compromise of the certificate’s long-term private key does not reveal old traffic keys. That is forward secrecy, assuming the ephemeral secrets were not retained."
+              }
+            ],
+            "deeper": [
+              "TLS 1.3 removed static RSA key transport from the ordinary handshake.",
+              "Finished messages authenticate the handshake transcript and confirm both sides derived matching secrets.",
+              "Key updates can derive fresh application traffic keys during a long connection."
+            ],
+            "terms": {
+              "ECDHE": "Ephemeral Elliptic Curve Diffie–Hellman key agreement.",
+              "HKDF": "HMAC-based Extract-and-Expand Key Derivation Function.",
+              "transcript": "The ordered handshake messages hashed into authentication and key derivation.",
+              "IV": "Initialization vector material used by authenticated encryption.",
+              "forward secrecy": "Past sessions remain protected after long-term-key compromise."
+            },
+            "interviewLine": "TLS 1.3 authenticates ephemeral ECDHE and feeds it through HKDF to derive independent, forward-secret traffic keys."
           }
         },
         {
@@ -405,19 +1028,51 @@
             "real"
           ],
           "easy": {
-            "title": "Wrap the packet",
-            "summary": "The packet gains glowing armor. From here on, anyone watching the road sees scrambled data instead of your request.",
-            "sections": [],
+            "title": "Wrap every HTTP message",
+            "summary": "After the handshake, TLS divides HTTP data into records, encrypts it, and adds an authentication check that exposes tampering.",
+            "sections": [
+              {
+                "heading": "What observers can and cannot see",
+                "body": "Someone on the path can still see network addresses, timing, and approximate sizes. They cannot read protected HTTP headers or bodies or change them without detection."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "TLS": "Transport Layer Security — encryption and authentication for data in transit.",
+              "record": "A framed chunk protected by TLS.",
+              "authentication": "Evidence that data came from the expected party and was not altered."
+            }
           },
           "real": {
-            "title": "Encrypted records",
-            "summary": "HTTP headers and bodies are carried inside authenticated TLS records. Encryption provides confidentiality while authentication detects tampering.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "After the handshake, HTTP travels inside authenticated, encrypted TLS records."
+            "title": "Authenticated TLS records",
+            "summary": "HTTP bytes now travel inside independently protected TLS records using negotiated AEAD algorithms.",
+            "sections": [
+              {
+                "heading": "Record protection",
+                "body": "TLS fragments application bytes into records. Each direction uses its own traffic key and nonce sequence. AEAD encryption provides confidentiality and an authentication tag, so modified ciphertext fails verification instead of becoming silently corrupted plaintext."
+              },
+              {
+                "heading": "Metadata boundary",
+                "body": "TLS protects HTTP methods, paths, headers, cookies, and bodies. IP addresses and transport-level timing remain visible; SNI is commonly visible without newer encrypted-client-hello deployment. This visualization’s opaque armor is therefore a simplification, not total invisibility."
+              },
+              {
+                "heading": "Failure and ordering",
+                "body": "A record with a bad authentication tag is rejected. TCP supplies ordered bytes beneath ordinary TLS; QUIC integrates TLS 1.3 with its own stream transport for HTTP/3."
+              }
+            ],
+            "deeper": [
+              "Traffic analysis can infer patterns from sizes and timing even when contents are encrypted.",
+              "TLS record boundaries do not necessarily match HTTP message or transport-segment boundaries.",
+              "AEAD suites combine encryption and integrity in one construction."
+            ],
+            "terms": {
+              "AEAD": "Authenticated Encryption with Associated Data.",
+              "nonce": "A per-record value that must not repeat with the same key.",
+              "authentication tag": "A cryptographic check that detects modification.",
+              "SNI": "Server Name Indication.",
+              "QUIC": "A UDP-based secure multiplexed transport."
+            },
+            "interviewLine": "After the handshake, HTTP is carried in AEAD-protected TLS records; contents are private and tampering is detected, while routing metadata remains visible."
           }
         },
         {
@@ -426,19 +1081,107 @@
             "real"
           ],
           "easy": {
-            "title": "Agree on protection",
-            "summary": "The two sides choose a shared way to protect the conversation.",
-            "sections": [],
+            "title": "Agree on the security recipe",
+            "summary": "ClientHello advertises what the browser supports, and ServerHello chooses a compatible TLS version, cipher suite, and key share.",
+            "sections": [
+              {
+                "heading": "Application choice too",
+                "body": "SNI names the site, while ALPN lets client and server choose an application protocol such as HTTP/2. These choices happen before encrypted HTTP requests begin."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "ClientHello": "The client’s opening TLS capabilities message.",
+              "ServerHello": "The server’s TLS parameter selection.",
+              "SNI": "Server Name Indication.",
+              "ALPN": "Application-Layer Protocol Negotiation."
+            }
           },
           "real": {
-            "title": "TLS 1.3 negotiation",
-            "summary": "ClientHello offers supported versions, cipher suites, signature algorithms, key shares, and ALPN protocols. ServerHello selects compatible parameters; a resumed session may reduce work, while 0-RTT data has replay caveats.",
-            "sections": [],
+            "title": "ClientHello, SNI, ALPN, and key shares",
+            "summary": "The TLS 1.3 ClientHello is both a capability advertisement and the client’s first contribution to key establishment.",
+            "sections": [
+              {
+                "heading": "Client offer",
+                "body": "It includes supported TLS versions, cipher suites, signature algorithms, supported groups, one or more key shares, random data, session-resumption identities when present, SNI for virtual hosting, and ALPN choices such as h2 or http/1.1."
+              },
+              {
+                "heading": "Server selection",
+                "body": "ServerHello selects the TLS version, cipher suite, and key share. EncryptedExtensions confirms negotiated extensions such as ALPN; the server then sends certificate authentication unless a resumed mode replaces it."
+              },
+              {
+                "heading": "Round-trip cost",
+                "body": "A full TLS 1.3 handshake normally needs one network round trip before application data, versus two round trips for the classic TLS 1.2 full handshake. DNS, TCP, and transport setup are separate costs."
+              }
+            ],
+            "deeper": [
+              "TLS 1.3 cipher suites specify record protection, while key exchange and signature algorithms are negotiated separately.",
+              "GREASE values help prevent protocol ossification by exercising unknown-extension handling.",
+              "Encrypted ClientHello aims to hide SNI where supported, but deployment is not universal."
+            ],
+            "terms": {
+              "SNI": "Server Name Indication.",
+              "ALPN": "Application-Layer Protocol Negotiation.",
+              "h2": "The ALPN identifier for HTTP/2.",
+              "key share": "A public ephemeral key-agreement contribution.",
+              "EncryptedExtensions": "The TLS 1.3 message carrying protected negotiated extensions.",
+              "GREASE": "Reserved values sent to keep protocol extension points tolerant."
+            },
+            "interviewLine": "ClientHello offers versions, algorithms, SNI, ALPN, and key shares; ServerHello selects the cryptographic path."
+          }
+        },
+        {
+          "id": "resumption",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Reuse recent trust",
+            "summary": "A returning client can present a session ticket so both sides derive fresh keys with less handshake work.",
+            "sections": [
+              {
+                "heading": "The cautious shortcut",
+                "body": "TLS 1.3 resumption still creates new traffic keys. Optional 0-RTT data can travel immediately, but it may be replayed, so servers should accept it only for safe operations."
+              }
+            ],
             "deeper": [],
-            "terms": {},
-            "interviewLine": "ClientHello and ServerHello negotiate the cryptographic and application-protocol parameters."
+            "terms": {
+              "session ticket": "Server-issued data that lets a later connection resume shared state.",
+              "0-RTT": "Application data sent before a new handshake round trip completes.",
+              "replayed": "Captured data sent again by an attacker."
+            }
+          },
+          "real": {
+            "title": "Resumption, PSKs, and the 0-RTT caveat",
+            "summary": "TLS 1.3 can resume from a prior session using a PSK derived from a ticket, reducing authentication work while deriving fresh connection keys.",
+            "sections": [
+              {
+                "heading": "Resumed 1-RTT",
+                "body": "The client includes a ticket identity and binder in ClientHello. If accepted, the handshake can authenticate from the PSK and new key share without sending a certificate chain again. A normal resumed handshake still waits one round trip before ordinary application data."
+              },
+              {
+                "heading": "Early data",
+                "body": "0-RTT lets selected application bytes accompany ClientHello. Those bytes are not forward-secret at that moment and can be replayed across connections, so they are unsuitable for non-idempotent actions such as placing an order."
+              },
+              {
+                "heading": "Version comparison",
+                "body": "A full TLS 1.3 handshake is normally 1-RTT; the classic TLS 1.2 full handshake was 2-RTT before application data. Network stacks can also combine transport and crypto setup differently with QUIC."
+              }
+            ],
+            "deeper": [
+              "Servers rotate and expire session-ticket keys and can reject resumption at any time.",
+              "A fresh ECDHE share can preserve forward secrecy for resumed application traffic.",
+              "Idempotent means repeating the operation has the same intended effect as doing it once."
+            ],
+            "terms": {
+              "PSK": "Pre-Shared Key — resumption secret known to both endpoints.",
+              "binder": "A ClientHello authenticator proving possession of the PSK.",
+              "0-RTT": "Zero-round-trip early application data.",
+              "replay": "Re-sending previously valid early data.",
+              "idempotent": "Safe to repeat without creating additional intended effects.",
+              "QUIC": "A secure transport that integrates TLS 1.3."
+            },
+            "interviewLine": "TLS 1.3 resumption uses a PSK to reduce work; 0-RTT saves latency only when replay risk is acceptable."
           }
         }
       ]
@@ -447,7 +1190,7 @@
       "id": "edge",
       "title": {
         "easy": "Choosing the fastest door",
-        "real": "Google edge, anycast & load balancing"
+        "real": "Global edge routing"
       },
       "kicker": "ONE ADDRESS, A GLOBAL FRONT DOOR",
       "sources": [
@@ -458,6 +1201,10 @@
         {
           "label": "MDN: HTTP/3",
           "url": "https://developer.mozilla.org/en-US/docs/Glossary/HTTP_3"
+        },
+        {
+          "label": "MDN: QUIC",
+          "url": "https://developer.mozilla.org/en-US/docs/Glossary/QUIC"
         }
       ],
       "hotspots": [
@@ -468,19 +1215,52 @@
             "real"
           ],
           "easy": {
-            "title": "A nearby entrance",
-            "summary": "The same address is advertised from many places. The network steers your packet toward a nearby Google edge.",
-            "sections": [],
+            "title": "Enter through a nearby edge",
+            "summary": "Anycast lets many data centers advertise the same IP address, and internet routing carries the packet toward one reachable copy.",
+            "sections": [
+              {
+                "heading": "“Nearest” is about routes",
+                "body": "BGP — the Border Gateway Protocol — exchanges reachability between large networks. Its policy and path choices define the selected edge, which may not be the geographically closest building."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "anycast": "Advertising the same IP prefix from multiple locations.",
+              "BGP": "Border Gateway Protocol — routing between autonomous networks.",
+              "IP address": "A numeric network destination.",
+              "edge": "Infrastructure near the boundary of a provider’s network."
+            }
           },
           "real": {
-            "title": "Anycast routing",
-            "summary": "Multiple edge sites can advertise the same prefix with BGP. Network routing selects a reachable path; “nearest” means routing-topology proximity, not physical distance.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "Anycast lets one service address lead users toward a suitable nearby edge site."
+            "title": "BGP anycast and topology distance",
+            "summary": "Anycast makes one service prefix reachable from many edge sites; BGP policy chooses the path visible to the client’s network.",
+            "sections": [
+              {
+                "heading": "Route selection",
+                "body": "Each site advertises the same prefix. Networks compare available BGP routes using policy, local preference, path information, and other attributes. The resulting “nearest” means preferred in routing topology, not smallest geographic distance."
+              },
+              {
+                "heading": "Operational behavior",
+                "body": "Withdrawing a route can steer new traffic away from a failed site. Existing TCP connections generally do not migrate cleanly if routing moves them to a different edge, so operators balance stability with failover speed."
+              },
+              {
+                "heading": "DNS relationship",
+                "body": "DNS can also steer clients by returning different addresses. Large services combine DNS policy and anycast; this diorama merges them into one teaching moment rather than claiming a single fixed Google design."
+              }
+            ],
+            "deeper": [
+              "BGP convergence is not instantaneous, and transient route changes can affect latency.",
+              "Provider peering relationships can make a physically farther site topologically preferable.",
+              "Anycast is used for DNS infrastructure as well as application front doors."
+            ],
+            "terms": {
+              "anycast": "One IP prefix announced from multiple sites.",
+              "BGP": "The interdomain routing protocol.",
+              "prefix": "A block of IP addresses advertised together.",
+              "routing topology": "Connectivity and policy relationships between networks.",
+              "convergence": "The process of routers settling on new paths after a change."
+            },
+            "interviewLine": "Anycast uses BGP to map one service prefix to a preferred reachable edge; “nearest” is a routing decision."
           }
         },
         {
@@ -490,19 +1270,52 @@
             "real"
           ],
           "easy": {
-            "title": "Sort the traffic",
-            "summary": "A load balancer is a traffic conductor. It sends each request to a healthy machine with room to help.",
-            "sections": [],
+            "title": "Let the edge choose a healthy worker",
+            "summary": "A load balancer is a traffic director: it accepts the request, checks policy, and routes it to a healthy backend with capacity.",
+            "sections": [
+              {
+                "heading": "One front door, many machines",
+                "body": "The edge can absorb abusive traffic, finish TCP and TLS setup, and hide changing backend machines behind one stable service address. Health checks keep failed workers out of new routing decisions."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "load balancer": "A service that distributes requests across healthy backends.",
+              "backend": "A server or service behind the public front door.",
+              "health check": "A repeated test used to decide whether a backend should receive traffic.",
+              "TLS": "Transport Layer Security."
+            }
           },
           "real": {
-            "title": "Edge load balancing",
-            "summary": "The edge may terminate transport and TLS, apply policy, and route the HTTP request across healthy backends using locality, capacity, and service metadata.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The edge terminates and routes traffic so individual backends are hidden behind one service."
+            "title": "GFE-style edge termination and health routing",
+            "summary": "A Google Front End–style layer is a reverse proxy that terminates client connections, absorbs attacks, enforces policy, and selects healthy service backends.",
+            "sections": [
+              {
+                "heading": "Front-end work",
+                "body": "The edge can terminate TCP or QUIC and TLS, validate HTTP, rate-limit abuse, attach observability, and absorb or filter DDoS traffic before it reaches application services. Google’s exact production components evolve; “GFE-style” here is an acknowledged teaching simplification."
+              },
+              {
+                "heading": "Backend selection",
+                "body": "Health checks remove failing endpoints. Routing considers service identity, region, capacity, and locality rather than randomly choosing a rack. Separate pooled connections can carry edge-to-backend traffic."
+              },
+              {
+                "heading": "Failure handling",
+                "body": "If one backend is unhealthy, new requests route elsewhere; in-flight work may be retried only when application semantics make retry safe. The visual red rack is illustrative rather than a claim about Google’s current UI or hardware."
+              }
+            ],
+            "deeper": [
+              "Layer 4 balancing routes transport flows; Layer 7 balancing can inspect HTTP semantics.",
+              "DDoS defenses combine network capacity, filtering, admission control, and application-aware policy.",
+              "Retries require budgets and idempotency to avoid amplifying failures."
+            ],
+            "terms": {
+              "GFE": "Google Front End — used here as a simplified name for Google’s edge reverse-proxy role.",
+              "reverse proxy": "A server that receives client requests and forwards them to internal services.",
+              "QUIC": "A secure transport over UDP.",
+              "DDoS": "Distributed Denial of Service.",
+              "idempotency": "The property that a repeated operation has the same intended effect."
+            },
+            "interviewLine": "A GFE-style edge terminates client transport, filters abuse, and routes HTTP only to healthy, capacity-aware backends."
           }
         },
         {
@@ -512,19 +1325,106 @@
             "real"
           ],
           "easy": {
-            "title": "Millions of journeys",
-            "summary": "Your packet joins a river of requests. Shared infrastructure keeps every tiny journey moving without collisions.",
-            "sections": [],
+            "title": "Share the road efficiently",
+            "summary": "Modern HTTP lets many request streams share a connection instead of building a new road for every file.",
+            "sections": [
+              {
+                "heading": "Two modern approaches",
+                "body": "HTTP/2 multiplexes independent streams over one TCP connection. HTTP/3 carries those streams over QUIC, so loss affecting one stream does not force unrelated streams to wait for missing TCP bytes."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "HTTP": "The application protocol for web requests and responses.",
+              "multiplexes": "Interleaves several logical conversations on one connection.",
+              "TCP": "A reliable ordered byte stream.",
+              "QUIC": "A secure multiplexed transport over UDP.",
+              "stream": "One ordered logical flow inside a multiplexed connection."
+            }
           },
           "real": {
-            "title": "Multiplexed traffic",
-            "summary": "Persistent connections and multiplexing let many request streams share infrastructure efficiently. HTTP/2 multiplexes over TCP; HTTP/3 maps HTTP semantics onto QUIC over UDP.",
-            "sections": [],
+            "title": "HTTP/2, HTTP/3, and head-of-line blocking",
+            "summary": "Multiplexing removes HTTP/1.x request serialization, but the transport beneath it determines how packet loss affects concurrent streams.",
+            "sections": [
+              {
+                "heading": "HTTP/2 over TCP",
+                "body": "HTTP/2 frames many streams across one TCP byte stream. Requests can make progress concurrently, but TCP must deliver bytes in order: one lost packet can delay later bytes for every HTTP/2 stream on that connection. This is transport-level head-of-line blocking."
+              },
+              {
+                "heading": "HTTP/3 over QUIC",
+                "body": "HTTP/3 maps HTTP semantics onto QUIC streams over UDP. QUIC provides reliability per stream, so loss on one stream does not block delivery on unrelated streams, while TLS 1.3 is integrated into the transport handshake."
+              },
+              {
+                "heading": "Why QUIC exists",
+                "body": "QUIC also supports user-space evolution and connection migration across network changes. It does not eliminate congestion or loss; it isolates stream ordering and reduces protocol ossification."
+              }
+            ],
+            "deeper": [
+              "HTTP/2 header compression uses HPACK; HTTP/3 uses QPACK adapted to independent streams.",
+              "QUIC still has congestion control shared across the connection.",
+              "A single request stream remains ordered and can wait for its own lost data."
+            ],
+            "terms": {
+              "multiplexing": "Interleaving multiple logical streams.",
+              "head-of-line blocking": "Later data waits behind missing earlier ordered data.",
+              "QUIC": "A UDP-based secure multiplexed transport.",
+              "UDP": "User Datagram Protocol.",
+              "HPACK": "HTTP/2 header compression.",
+              "QPACK": "HTTP/3 header compression."
+            },
+            "interviewLine": "HTTP/2 multiplexes over one ordered TCP stream; HTTP/3 uses independent QUIC streams to avoid cross-stream head-of-line blocking."
+          }
+        },
+        {
+          "id": "affinity",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Keep a flow on a stable path",
+            "summary": "Consistent hashing maps a connection or client key to a backend while limiting how many mappings change when servers enter or leave.",
+            "sections": [
+              {
+                "heading": "Maglev-style idea",
+                "body": "A Maglev-style lookup table gives each healthy backend stable positions, making packet-level selection fast and preserving connection affinity. The exact Google implementation is simplified here."
+              }
+            ],
             "deeper": [],
-            "terms": {},
-            "interviewLine": "Modern transports multiplex many logical request streams across fewer long-lived connections."
+            "terms": {
+              "consistent hashing": "A mapping technique designed to minimize remapping when members change.",
+              "affinity": "Keeping related traffic on the same backend.",
+              "Maglev": "Google’s published load-balancing design; “Maglev-style” denotes the general table-based idea."
+            }
+          },
+          "real": {
+            "title": "Consistent hashing and Maglev-style affinity",
+            "summary": "Large load balancers need fast, repeatable backend selection that does not reshuffle every flow after a small membership change.",
+            "sections": [
+              {
+                "heading": "Stable selection",
+                "body": "A hash of flow or service data indexes a table whose entries point to healthy backends. A Maglev-style table is constructed so each backend receives a balanced share while membership changes remap a limited portion of entries."
+              },
+              {
+                "heading": "Why affinity matters",
+                "body": "Packets belonging to one transport flow must reach compatible connection state. Stable selection also improves cache locality. If a backend fails, health state rebuilds or masks table entries so affected flows can be reassigned according to retry and connection rules."
+              },
+              {
+                "heading": "Scope note",
+                "body": "This is a mechanism-level teaching model inspired by published Maglev-style balancing, not a claim that every google.com request traverses one named table or uses one fixed hash key."
+              }
+            ],
+            "deeper": [
+              "Consistent hashing reduces remapping; it does not guarantee zero movement.",
+              "Connection tracking and state replication influence what failover is safe.",
+              "Layer 7 routing can make a later service-level decision after a Layer 4 affinity choice."
+            ],
+            "terms": {
+              "hash": "A deterministic function mapping input to a bounded value.",
+              "affinity": "Stable routing for related traffic.",
+              "cache locality": "Keeping repeated work near previously used data.",
+              "connection state": "Transport metadata required to continue an established flow."
+            },
+            "interviewLine": "Maglev-style consistent hashing gives fast, balanced, stable flow affinity while limiting remapping during backend changes."
           }
         },
         {
@@ -533,19 +1433,50 @@
             "real"
           ],
           "easy": {
-            "title": "Open at the edge",
-            "summary": "The trusted edge opens the protected packet before routing it onward.",
-            "sections": [],
+            "title": "Split the trip into trusted legs",
+            "summary": "The edge can decrypt the client TLS connection, apply HTTP policy, then use a different protected connection to an internal service.",
+            "sections": [
+              {
+                "heading": "Two connections, one request",
+                "body": "Client-to-edge and edge-to-backend are separate transport legs with separate keys, timers, and congestion state. The proxy carries the HTTP meaning across that boundary."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "termination": "Ending a transport or TLS connection at an intermediary.",
+              "proxy": "An intermediary that forwards requests.",
+              "transport": "The protocol moving data between endpoints."
+            }
           },
           "real": {
-            "title": "Edge termination & proxying",
-            "summary": "A reverse proxy can terminate client TCP/QUIC and TLS, inspect HTTP, enforce policy, then reuse separate pooled connections to origin services. The client-to-edge and edge-to-origin legs are distinct.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "At a large edge, transport termination and origin proxying are usually separate connection legs."
+            "title": "Client termination and origin proxying",
+            "summary": "At scale, the public connection usually ends at an edge proxy; internal service traffic continues on pooled, separately secured connections.",
+            "sections": [
+              {
+                "heading": "Connection boundary",
+                "body": "The edge owns the client TCP or QUIC state and TLS keys. After parsing HTTP, it can enforce authentication, routing, and rate policy, then forward the request over an independent connection to a backend or origin service."
+              },
+              {
+                "heading": "Performance effect",
+                "body": "Pooled internal connections avoid repeating handshakes per request and can multiplex many requests. Client congestion and backend congestion are separate, so the proxy buffers and applies backpressure between legs."
+              },
+              {
+                "heading": "Security boundary",
+                "body": "TLS is end-to-edge in this model, not directly end-to-application-process. Internal links can use TLS again and service identity. Simplification: actual Google trust boundaries and protocols are private and change over time."
+              }
+            ],
+            "deeper": [
+              "A reverse proxy must sanitize hop-by-hop headers when forwarding HTTP.",
+              "Backpressure prevents an upstream producer from overrunning a slower downstream consumer.",
+              "End-to-end application encryption can exist above proxy-visible HTTP when a product requires it."
+            ],
+            "terms": {
+              "origin": "The backend service responsible for the resource.",
+              "pooling": "Reusing a set of open connections.",
+              "backpressure": "Slowing producers when downstream capacity is limited.",
+              "hop-by-hop header": "HTTP metadata that applies to one connection leg rather than the whole request path."
+            },
+            "interviewLine": "Edge termination creates distinct client and backend connection legs, with HTTP policy and backpressure at the proxy boundary."
           }
         }
       ]
@@ -554,13 +1485,21 @@
       "id": "server",
       "title": {
         "easy": "Building the answer",
-        "real": "Request handling & rendering"
+        "real": "Request, response & render"
       },
       "kicker": "THE RESPONSE BECOMES A PAGE",
       "sources": [
         {
-          "label": "what-happens-when: Rendering",
-          "url": "https://github.com/alex/what-happens-when#browser-rendering"
+          "label": "what-happens-when: HTTP request handling",
+          "url": "https://github.com/alex/what-happens-when#http-server-request-handle"
+        },
+        {
+          "label": "what-happens-when: browser rendering",
+          "url": "https://github.com/alex/what-happens-when#behind-the-scenes-of-the-browser"
+        },
+        {
+          "label": "MDN: Content-Encoding",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Encoding"
         }
       ],
       "hotspots": [
@@ -571,19 +1510,56 @@
             "real"
           ],
           "easy": {
-            "title": "Read the request",
-            "summary": "A server opens the packet and sees what page you asked for. It checks the request before choosing an answer.",
-            "sections": [],
+            "title": "Read what the browser asked for",
+            "summary": "The server parses an HTTP request: its method says what action to take, its path names the resource, and headers carry context such as accepted formats and cookies.",
+            "sections": [
+              {
+                "heading": "Route it safely",
+                "body": "A router matches the method and path to application code. Authentication checks who the caller is; authorization checks what that caller may do. Logging and tracing record how the request moves through the service."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "HTTP": "The web request/response protocol.",
+              "method": "The requested action, such as GET.",
+              "path": "The resource location within a site.",
+              "header": "Named request or response metadata.",
+              "cookie": "Small browser-managed data sent with matching requests.",
+              "authentication": "Checking identity.",
+              "authorization": "Checking permission."
+            }
           },
           "real": {
-            "title": "HTTP request parsing",
-            "summary": "The front end parses the method, path, headers, cookies, and request body, then applies routing, authentication, policy, and observability.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "The server parses HTTP and routes the request into the application pipeline."
+            "title": "HTTP anatomy, routing, and policy",
+            "summary": "The edge or server turns encrypted bytes into a structured HTTP request before application logic runs.",
+            "sections": [
+              {
+                "heading": "Request anatomy",
+                "body": "For direct navigation the method is normally GET and the path is “/”. Headers identify the host, accepted encodings and content types, cache validators, user agent, and cookies; a body is uncommon for GET but central to methods such as POST."
+              },
+              {
+                "heading": "Dispatch",
+                "body": "Virtual-host and route tables select the service and handler. Authentication establishes identity, authorization enforces permissions, and input validation rejects malformed or dangerous data. Deadlines and trace identifiers propagate through downstream calls."
+              },
+              {
+                "heading": "Operational controls",
+                "body": "Rate limits, request-size limits, observability, and retry policy protect the service. A request can fail before business logic if any gate rejects it."
+              }
+            ],
+            "deeper": [
+              "Cookies are scoped by domain, path, security attributes, and SameSite policy.",
+              "HTTP semantics distinguish safe and idempotent methods, which influences retries.",
+              "Distributed traces connect work across service boundaries using propagated identifiers."
+            ],
+            "terms": {
+              "GET": "An HTTP method for retrieving a representation.",
+              "POST": "An HTTP method commonly used to submit processing input.",
+              "virtual host": "Server configuration selected by hostname.",
+              "authentication": "Identity verification.",
+              "authorization": "Permission enforcement.",
+              "idempotent": "Repeatable without additional intended effects."
+            },
+            "interviewLine": "Parse method, path, headers, cookies, and body; then route through authentication, authorization, limits, and observability."
           }
         },
         {
@@ -593,19 +1569,51 @@
             "real"
           ],
           "easy": {
-            "title": "Assemble the response",
-            "summary": "Fast caches provide familiar pieces; other parts are computed. The server packs the page instructions for the trip back.",
-            "sections": [],
+            "title": "Reuse, compute, then assemble",
+            "summary": "The application checks fast caches first; if no stored answer fits, it calls services or storage and combines their results into an HTTP response.",
+            "sections": [
+              {
+                "heading": "A search-sized example",
+                "body": "A search engine can ask many index partitions for candidates in parallel, merge and rank the replies, and build the result page under a tight latency budget. The exact Google pipeline is private, so this is a simplified model."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "cache": "Fast stored data used before recomputing work.",
+              "index partition": "One shard of a larger searchable index.",
+              "latency": "Elapsed time between request and response."
+            }
           },
           "real": {
-            "title": "Cache or compute",
-            "summary": "The application may satisfy the request from an edge or service cache, call backend services, or query storage before serializing an HTTP response.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "Request handling is usually a cache-first pipeline before deeper service or storage work."
+            "title": "Cache-first fan-out and answer assembly",
+            "summary": "Request handling is a deadline-driven pipeline: reuse a cache when possible, otherwise fan out, merge, rank, and serialize a response.",
+            "sections": [
+              {
+                "heading": "Cache before storage",
+                "body": "The service checks edge, application, and data caches appropriate to the request. A hit saves downstream work; a miss can call internal services or storage. Cache keys, freshness, and authorization context must prevent serving the wrong result."
+              },
+              {
+                "heading": "Search-engine model",
+                "body": "For Google specifically, a useful simplified model is fan-out across index shards, collecting candidate documents, then merging and ranking them before assembling the answer. A roughly 200ms internal budget illustrates why calls run in parallel and use deadlines; it is not a fixed public SLA or exact current topology."
+              },
+              {
+                "heading": "Response construction",
+                "body": "The server chooses a status, headers, cookies, content type, cache policy, and body. It streams or buffers the result, then sends it back through the edge and existing protected connection."
+              }
+            ],
+            "deeper": [
+              "Tail latency matters because a fan-out waits on the slowest required shard unless deadlines or partial results intervene.",
+              "Hedged requests can reduce tails but add load and require careful budgets.",
+              "Personalization and authorization affect whether a result is cacheable."
+            ],
+            "terms": {
+              "fan-out": "Sending parallel work to multiple partitions or services.",
+              "shard": "A partition of a larger data set or index.",
+              "tail latency": "The slow end of a latency distribution.",
+              "SLA": "Service Level Agreement.",
+              "serialization": "Encoding structured data into bytes for a response."
+            },
+            "interviewLine": "A cache-first, deadline-bound handler fans out only when necessary, then merges and serializes the answer within its latency budget."
           }
         },
         {
@@ -615,19 +1623,111 @@
             "real"
           ],
           "easy": {
-            "title": "Turn code into pixels",
-            "summary": "Back in the browser, page instructions become a tree of visible pieces. The browser sizes, paints, and layers them into the page you see.",
-            "sections": [],
+            "title": "Turn the response into pixels",
+            "summary": "The browser parses HTML into the DOM, a tree of page elements, and CSS into the CSSOM, a tree of style rules.",
+            "sections": [
+              {
+                "heading": "From trees to screen",
+                "body": "The browser combines visible DOM and CSSOM information into a render tree, calculates geometry during layout, records drawing work during paint, and composites layers into the final image. Downloads and scripts can cause parts of this work to repeat."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "DOM": "Document Object Model — the tree of HTML nodes.",
+              "CSS": "Cascading Style Sheets — presentation rules.",
+              "CSSOM": "CSS Object Model — parsed style rules.",
+              "render tree": "Visible styled objects used for layout and paint.",
+              "layout": "Calculating sizes and positions.",
+              "paint": "Recording visual drawing commands.",
+              "composite": "Combining painted layers on screen."
+            }
           },
           "real": {
-            "title": "DOM to pixels",
-            "summary": "The browser parses HTML into the DOM and CSS into the CSSOM, builds a render tree, performs layout, paints layers, and composites them—while fetching discovered subresources.",
-            "sections": [],
+            "title": "DOM, CSSOM, layout, paint, composite",
+            "summary": "Rendering is a pipeline with dependencies: parse structure and styles, determine visible geometry, paint pixels into layers, then composite them.",
+            "sections": [
+              {
+                "heading": "Parse and style",
+                "body": "The HTML parser incrementally constructs the DOM. CSS parsing produces the CSSOM; because styles affect every element’s appearance, render-tree construction needs the relevant CSS. Script execution can inspect or mutate both trees and may pause parsing depending on how the script is loaded."
+              },
+              {
+                "heading": "Geometry and pixels",
+                "body": "Style calculation produces computed styles. Layout resolves box sizes and positions. Paint records backgrounds, text, borders, and effects into display items or layers. Compositing combines rasterized layers, often on the GPU, and can move an existing layer without repainting it."
+              },
+              {
+                "heading": "When the user sees something",
+                "body": "First paint can happen before every resource finishes once enough DOM and CSS are available and blocking work is cleared. Later fonts, images, or scripts can trigger additional style, layout, paint, or composite work."
+              }
+            ],
+            "deeper": [
+              "Layout is sometimes called reflow; paint is sometimes called rasterization, though engines separate recording and raster work.",
+              "Transforms and opacity can often update at composite time without layout or repaint.",
+              "Rendering engines pipeline work across threads, so this sequence is conceptual rather than one single-threaded loop."
+            ],
+            "terms": {
+              "DOM": "Document Object Model.",
+              "CSSOM": "CSS Object Model.",
+              "computed style": "The resolved CSS values for an element.",
+              "layout": "Geometry calculation.",
+              "paint": "Creation of drawing instructions and raster work.",
+              "compositing": "Combining visual layers.",
+              "GPU": "Graphics Processing Unit."
+            },
+            "interviewLine": "The browser builds DOM and CSSOM, calculates style and layout, paints layers, and composites them; first paint waits only for the dependencies that block visible output."
+          }
+        },
+        {
+          "id": "compression",
+          "modes": [
+            "real"
+          ],
+          "easy": {
+            "title": "Label and compress the response",
+            "summary": "Response headers describe status, type, caching, security, and compression before or alongside the body.",
+            "sections": [
+              {
+                "heading": "Fewer bytes on the wire",
+                "body": "If the request advertises Brotli support, the server can send a Brotli-compressed body and mark it with Content-Encoding: br. Compression trades CPU work for less transfer time."
+              }
+            ],
             "deeper": [],
-            "terms": {},
-            "interviewLine": "Rendering proceeds through DOM/CSSOM, render tree, layout, paint, and compositing."
+            "terms": {
+              "header": "Named HTTP response metadata.",
+              "Brotli": "A compression format commonly used for web text.",
+              "Content-Encoding": "The response header naming compression applied to the body."
+            }
+          },
+          "real": {
+            "title": "Response headers and Brotli",
+            "summary": "The response’s metadata controls interpretation, caching, security policy, and whether the representation is compressed for transfer.",
+            "sections": [
+              {
+                "heading": "Core metadata",
+                "body": "The status code reports the outcome. Content-Type identifies the media format. Cache-Control and validators shape reuse. Content-Encoding says which coding, such as br for Brotli or gzip, must be decoded to recover the representation."
+              },
+              {
+                "heading": "Negotiation",
+                "body": "The browser advertises acceptable codings with Accept-Encoding. The server or edge selects one and should vary caches appropriately. Brotli is especially effective for HTML, CSS, and JavaScript; already-compressed images often gain little."
+              },
+              {
+                "heading": "Streaming tradeoff",
+                "body": "Compression reduces bytes but consumes CPU and can delay the first output chunk if buffering is excessive. Production systems choose levels and streaming behavior based on content size, cacheability, and latency goals."
+              }
+            ],
+            "deeper": [
+              "Content-Length, when present, describes the encoded body length rather than the decoded representation.",
+              "Vary: Accept-Encoding prevents a shared cache from mixing compressed and uncompressed variants.",
+              "TLS compression is separate and was removed from modern TLS; HTTP content coding remains normal."
+            ],
+            "terms": {
+              "Content-Type": "The media type of the response body.",
+              "Cache-Control": "HTTP cache directives.",
+              "Content-Encoding": "Compression or coding applied to the representation.",
+              "Brotli": "A web-oriented compression format identified by br.",
+              "Accept-Encoding": "The request header listing supported content codings.",
+              "Vary": "A response header naming request fields that select cached variants."
+            },
+            "interviewLine": "Negotiate Brotli with Accept-Encoding, describe it with Content-Encoding, and keep cache variants and streaming latency correct."
           }
         },
         {
@@ -636,19 +1736,51 @@
             "real"
           ],
           "easy": {
-            "title": "Fetch the pieces",
-            "summary": "The page can ask for more styles, pictures, and code while it is being built.",
-            "sections": [],
+            "title": "Discover the page’s dependencies",
+            "summary": "While parsing HTML, the browser finds stylesheets, scripts, fonts, and images and starts more requests, often before the main parser reaches them.",
+            "sections": [
+              {
+                "heading": "Some resources block progress",
+                "body": "A preload scanner looks ahead for URLs. Classic scripts can pause the parser, and stylesheets can delay rendering because the browser needs CSS before it can safely paint styled content."
+              }
+            ],
             "deeper": [],
-            "terms": {}
+            "terms": {
+              "preload scanner": "A browser component that discovers resource URLs ahead of the main HTML parser.",
+              "parser-blocking": "Forcing the HTML parser to pause.",
+              "stylesheet": "A CSS resource containing presentation rules."
+            }
           },
           "real": {
-            "title": "Discovery & subresources",
-            "summary": "The preload scanner and parser discover CSS, JavaScript, fonts, and images. These requests reuse eligible connections and caches; scripts and styles can affect parsing, layout, paint, and later compositing.",
-            "sections": [],
-            "deeper": [],
-            "terms": {},
-            "interviewLine": "HTML parsing triggers a dependency graph of subresource requests before the page stabilizes."
+            "title": "Preload scanner, blocking, and first paint",
+            "summary": "Resource discovery runs alongside parsing, but dependency rules determine which downloads block DOM construction, script execution, or visible paint.",
+            "sections": [
+              {
+                "heading": "Look-ahead discovery",
+                "body": "A speculative preload scanner searches incoming HTML for fetchable URLs and starts network requests early. The main parser still owns correct DOM construction. Requests can reuse DNS, connections, multiplexed streams, HTTP caches, and priorities."
+              },
+              {
+                "heading": "Blocking order",
+                "body": "A classic synchronous script pauses HTML parsing while it downloads and executes. A stylesheet does not stop DOM parsing, but scripts may wait for prior stylesheets and rendering normally waits for required CSS to avoid painting unstyled content. async and defer change script timing."
+              },
+              {
+                "heading": "First paint",
+                "body": "The browser can paint once it has enough DOM, required CSS, and no blocking script preventing progress. Images and below-the-fold resources may finish later; late fonts or dimensions can change layout."
+              }
+            ],
+            "deeper": [
+              "preload links are author hints, while the preload scanner is a browser implementation technique.",
+              "async scripts execute when ready; defer scripts wait until parsing completes and preserve order.",
+              "Priority hints influence scheduling but do not override every browser heuristic."
+            ],
+            "terms": {
+              "preload scanner": "Speculative resource discovery running ahead of the parser.",
+              "async": "A script mode that executes as soon as downloaded.",
+              "defer": "A script mode that executes after parsing, in document order.",
+              "parser-blocking": "Pausing HTML tokenization and DOM construction.",
+              "first paint": "The first time the browser draws page content."
+            },
+            "interviewLine": "The preload scanner starts dependencies early, while CSS and script blocking rules decide when parsing and first paint may proceed."
           }
         }
       ]
