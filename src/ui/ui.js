@@ -115,7 +115,8 @@ export class UI {
     if (this.hotspotOrderKey !== orderKey) { this.hotspotOrderKey = orderKey; this.hotspotOrder = []; }
     hop.hotspots.filter((spot) => spot.modes.includes(s.mode)).forEach((spot, index) => {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'hotspot';
-      button.innerHTML = `<i></i><span>${String(index + 1).padStart(2,'0')} · ${spot[s.mode].title}</span>`;
+      const savedIndex = this.hotspotOrder.indexOf(spot.id);
+      button.innerHTML = `<i></i><span>${String((savedIndex < 0 ? index : savedIndex) + 1).padStart(2,'0')} · ${spot[s.mode].title}</span>`;
       button.setAttribute('aria-label', `Explore ${spot[s.mode].title}`); button.hidden = !visible;
       button.style.setProperty('--stagger', `${index * 70}ms`); button.classList.toggle('is-visible', visible);
       button.classList.toggle('is-active', s.focusedHotspot === spot.id);
@@ -126,7 +127,7 @@ export class UI {
   populateCard(hop, spot, mode, crossfade = false) {
     const card = spot[mode];
     const apply = () => {
-      q('#card-label').textContent = `${hop.title[mode]} · ${spot.id}`; q('#card-title').textContent = card.title;
+      q('#card-label').textContent = hop.title[mode]; q('#card-title').textContent = card.title;
       const body = q('#card-body'); body.replaceChildren(paragraph(card.summary, card.terms, 'card-summary'));
       card.sections.forEach((section) => { const wrapper = document.createElement('section'); const heading = document.createElement('h3'); heading.textContent = section.heading; wrapper.append(heading, paragraph(section.body, card.terms)); body.append(wrapper); });
       if (card.deeper.length) { const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Go deeper'; const list = document.createElement('ul'); card.deeper.forEach((item) => { const entry = document.createElement('li'); appendTermText(entry, item, card.terms); list.append(entry); }); details.append(summary, list); body.append(details); }
@@ -157,18 +158,21 @@ export class UI {
         const rect = this.card.getBoundingClientRect(); this.line.setAttribute('x1', rawX); this.line.setAttribute('y1', rawY); this.line.setAttribute('x2', rect.left); this.line.setAttribute('y2', rect.top + 68);
       }
     });
-    if (projected.length > 1) {
-      const center = projected.reduce((point, entry) => ({ x: point.x + entry.x, y: point.y + entry.y }), { x: 0, y: 0 });
-      center.x /= projected.length; center.y /= projected.length;
-      projected.sort((a, b) => {
+    const clockwise = [...projected];
+    if (clockwise.length > 1) {
+      const center = clockwise.reduce((point, entry) => ({ x: point.x + entry.x, y: point.y + entry.y }), { x: 0, y: 0 });
+      center.x /= clockwise.length; center.y /= clockwise.length;
+      clockwise.sort((a, b) => {
         const angle = (entry) => (Math.atan2(entry.x - center.x, center.y - entry.y) + Math.PI * 2) % (Math.PI * 2);
         return angle(a) - angle(b);
       });
     }
-    if (projected.length === this.buttons.size && projected.length > 1) this.hotspotOrder = projected.map((entry) => entry.spot.id);
-    projected.forEach((entry, index) => {
+    if (!this.hotspotOrder.length && clockwise.length === this.buttons.size && clockwise.length > 1) this.hotspotOrder = clockwise.map((entry) => entry.spot.id);
+    const labelOrder = this.hotspotOrder.length ? this.hotspotOrder : clockwise.map((entry) => entry.spot.id);
+    projected.forEach((entry) => {
+      const index = labelOrder.indexOf(entry.spot.id);
       const label = entry.button.querySelector('span');
-      if (label) label.textContent = `${String(index + 1).padStart(2, '0')} · ${entry.spot[s.mode].title}`;
+      if (label) label.textContent = `${String((index < 0 ? 0 : index) + 1).padStart(2, '0')} · ${entry.spot[s.mode].title}`;
     });
     projected.sort((a, b) => a.y - b.y); let previous = -Infinity;
     projected.forEach((entry) => { const labelY = Math.max(entry.y, previous + 30); const shift = THREE.MathUtils.clamp(labelY - entry.y, -36, 36); entry.button.style.setProperty('--label-shift', `${shift}px`); previous = entry.y + shift; });
