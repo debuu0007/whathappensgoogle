@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { assetManifest, hopAssetIds } from '../assets/manifest.js';
+import { gsap } from 'gsap';
 
 export class SceneManager {
   constructor(scene, hops) {
@@ -26,6 +27,21 @@ export class SceneManager {
       node.userData.targetOpacity = selected ? 1 : .22;
       node.userData.highlight = !!anchor && selected;
       node.material.depthWrite = selected;
+    });
+  }
+  playFinale() {
+    this.setActive(5);
+    const page = this.groups[5]?.userData.finalePage;
+    if (!page) return;
+    page.visible = true;
+    page.children.forEach((piece, index) => {
+      const final = piece.userData.finalPos ?? piece.position.toArray();
+      piece.position.set(final[0] + (index % 2 ? 7 : -7), final[1] + 4 + index * .2, final[2] + 2);
+      piece.rotation.z = (index % 2 ? 1 : -1) * .9;
+      piece.scale.setScalar(.2);
+      gsap.to(piece.position, { x: final[0], y: final[1], z: final[2], duration: .8, delay: .55 + index * .1, ease: 'power3.out' });
+      gsap.to(piece.rotation, { z: 0, duration: .8, delay: .55 + index * .1, ease: 'power3.out' });
+      gsap.to(piece.scale, { x: 1, y: 1, z: 1, duration: .65, delay: .55 + index * .1, ease: 'back.out(1.4)' });
     });
   }
   update(_delta, elapsed) {

@@ -26,7 +26,7 @@ const resize = () => { const width=innerWidth,height=innerHeight; camera.aspect=
 state.addEventListener('change',({detail})=>{
   const s=detail.value; const hop=hops[s.hopIndex]; const spot=hop.hotspots.find((item)=>item.id===s.focusedHotspot);
   scenes.setFocus(s.hopIndex, spot?.anchorMesh ?? null);
-  if(detail.reason==='FINISH'){ window.setTimeout(()=>state.send('SETTLED'),1400); }
+  if(detail.reason==='FINISH'){ scenes.playFinale(); window.setTimeout(()=>state.send('SETTLED'),1800); }
 });
 
 const loop = createLoop((delta, elapsed) => { cameraController.update(delta, elapsed); scenes.update(delta, elapsed); stars.rotation.y += delta * .006; ui.updateAnchors(); }, () => composer.render());

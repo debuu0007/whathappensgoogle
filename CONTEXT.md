@@ -37,7 +37,7 @@ Total ≤ 25MB · hero ≤ 2.5MB (<3s on 4G) · per hop ≤ 4MB · 60fps desktop
 ## Milestone status
 - [x] M0 skeleton — full journey navigable with placeholder cubes
 - [x] M1 vertical slice — DNS hop at final quality (**go/no-go checkpoint**)
-- [ ] M2 all 6 hops + hero + finale
+- [x] M2 all 6 hops + hero + finale
 - [ ] M3 polish/perf/mobile + playtest
 - [ ] M4 launch day (planned distribution day, not a cold drop)
 

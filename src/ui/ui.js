@@ -5,7 +5,7 @@ const q = (selector) => document.querySelector(selector);
 export class UI {
   constructor(state, hops, camera, scenes) {
     this.state = state; this.hops = hops; this.camera = camera; this.scenes = scenes;
-    this.hero = q('#hero'); this.loader = q('#loader'); this.chapter = q('#chapter'); this.card = q('#info-card');
+    this.hero = q('#hero'); this.heroBrowser = q('#hero-browser'); this.loader = q('#loader'); this.chapter = q('#chapter'); this.card = q('#info-card');
     this.hotspotLayer = q('#hotspots'); this.progress = q('#progress'); this.finale = q('#finale'); this.line = q('#leader-line');
     this.vector = new THREE.Vector3(); this.buttons = new Map();
     q('#start-button').addEventListener('click', () => state.send('START'));
@@ -32,6 +32,7 @@ export class UI {
   render({ value: s }) {
     this.loader.classList.toggle('is-hidden', s.phase !== 'LOADING');
     this.hero.classList.toggle('is-hidden', s.phase !== 'HERO');
+    this.heroBrowser.classList.toggle('is-hidden', s.phase !== 'HERO');
     this.finale.classList.toggle('is-hidden', s.phase !== 'FINALE');
     this.chapter.classList.toggle('is-hidden', ['LOADING','HERO','FINALE'].includes(s.phase));
     this.progress.classList.toggle('is-hidden', ['LOADING','HERO'].includes(s.phase));
@@ -47,6 +48,8 @@ export class UI {
     this.card.classList.toggle('is-open', !!showCard); this.card.setAttribute('aria-hidden', String(!showCard));
     if (showCard) this.populateCard(hop, spot, s.mode);
     if (s.phase === 'FINALE') this.playTimer();
+    document.body.classList.toggle('is-returning', s.phase === 'FINALE' && s.transitionLock);
+    document.body.classList.toggle('is-encrypted', s.hopIndex >= 3 && !['LOADING', 'HERO'].includes(s.phase));
   }
   renderHotspots(hop, s) {
     const visible = ['OVERVIEW','FOCUSED'].includes(s.phase) && !s.transitionLock;

@@ -19,6 +19,7 @@ export class CameraController {
     if (reason === 'START' || reason === 'GO_HOP') this.travel(hop, s.hopIndex);
     if (reason === 'FOCUS') this.focus(hop.hotspots.find((spot) => spot.id === s.focusedHotspot));
     if (reason === 'UNFOCUS') this.overview(hop, false);
+    if (reason === 'FINISH') this.finale();
     if (reason === 'REPLAY') this.hero();
   }
   hero() {
@@ -49,6 +50,12 @@ export class CameraController {
     gsap.to(this.camera, { fov: 42, duration, ease: 'power3.inOut', overwrite: 'auto', onUpdate: () => this.camera.updateProjectionMatrix(), onComplete: () => {
       this.controls.target.copy(this.goalLook); this.controls.update(); this.state.send('SETTLED');
     }});
+  }
+  finale() {
+    this.controls.enabled = false;
+    gsap.to(this.goalPos, { x: 0, y: 3.2, z: -80, duration: 1.1, ease: 'power4.inOut', overwrite: 'auto' });
+    gsap.to(this.goalLook, { x: 0, y: 1, z: -85.3, duration: 1.1, ease: 'power4.inOut', overwrite: 'auto' });
+    gsap.to(this.camera, { fov: 46, duration: 1.1, ease: 'power3.inOut', overwrite: 'auto', onUpdate: () => this.camera.updateProjectionMatrix() });
   }
   update(delta, elapsed) {
     if (this.rail && this.state.value.phase === 'TRAVELING') {
